@@ -33,17 +33,17 @@ export async function mauticApiRequest(
 		let returnData;
 
 		if (authenticationMethod === 'credentials') {
-			const credentials = await this.getCredentials('mauticApi');
+			const credentials = await this.getCredentials('mauticAdvancedApi');
 			const baseUrl = credentials.url as string;
 
 			options.uri = `${baseUrl.endsWith('/') ? baseUrl.slice(0, -1) : baseUrl}${options.uri}`;
-			returnData = await this.helpers.requestWithAuthentication.call(this, 'mauticApi', options);
+			returnData = await this.helpers.requestWithAuthentication.call(this, 'mauticAdvancedApi', options);
 		} else {
-			const credentials = await this.getCredentials('mauticOAuth2Api');
+			const credentials = await this.getCredentials('mauticAdvancedOAuth2Api');
 			const baseUrl = credentials.url as string;
 
 			options.uri = `${baseUrl.endsWith('/') ? baseUrl.slice(0, -1) : baseUrl}${options.uri}`;
-			returnData = await this.helpers.requestOAuth2.call(this, 'mauticOAuth2Api', options, {
+			returnData = await this.helpers.requestOAuth2.call(this, 'mauticAdvancedOAuth2Api', options, {
 				includeCredentialsOnRefreshOnBody: true,
 			});
 		}
