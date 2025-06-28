@@ -21,7 +21,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/msoukhomlinov/n8n-nodes-mautic-advanced.git"
+    "url": "git+https://github.com/msoukhomlinov/n8n-nodes-mautic-advanced.git"
   },
   "homepage": "https://github.com/msoukhomlinov/n8n-nodes-mautic-advanced#readme",
   "bugs": {
