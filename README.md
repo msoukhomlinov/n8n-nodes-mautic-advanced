@@ -2,7 +2,6 @@
 
 This project is an enhanced Mautic node for n8n, designed to provide more comprehensive support for the Mautic API. It builds upon the standard Mautic node by adding new resources and operations.
 
-
 ## Supported Resources and Operations
 
 This node provides full CRUD (Create, Read, Update, Delete) support for the following Mautic resources:
