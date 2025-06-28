@@ -44,7 +44,7 @@ This enhanced Mautic node provides comprehensive support for the following Mauti
 - **Get Companies** associated with a contact
 - **Get Devices** used by a contact
 
-### 🏷️ Tags (New!)
+### 🏷️ Tags
 - **Create** a new tag with description
 - **Get** a tag by ID
 - **Get Many** tags with search capabilities
