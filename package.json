@@ -1,7 +1,19 @@
 {
   "name": "n8n-nodes-mautic-advanced",
   "version": "0.1.0",
-  "description": "n8n node for Mautic with advanced features",
+  "description": "Enhanced n8n node for Mautic with comprehensive API coverage including tags, campaigns, categories, and advanced contact management",
+  "keywords": [
+    "n8n",
+    "n8n-nodes",
+    "mautic",
+    "marketing-automation",
+    "crm",
+    "email-marketing",
+    "lead-management",
+    "campaigns",
+    "contacts",
+    "tags"
+  ],
   "license": "MIT",
   "author": {
     "name": "Max Soukhomlinov",
@@ -10,6 +22,10 @@
   "repository": {
     "type": "git",
     "url": "https://github.com/msoukhomlinov/n8n-nodes-mautic-advanced.git"
+  },
+  "homepage": "https://github.com/msoukhomlinov/n8n-nodes-mautic-advanced#readme",
+  "bugs": {
+    "url": "https://github.com/msoukhomlinov/n8n-nodes-mautic-advanced/issues"
   },
   "main": "dist/nodes/MauticAdvanced/MauticAdvanced.node.js",
   "scripts": {
