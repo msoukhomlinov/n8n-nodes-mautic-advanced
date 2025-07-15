@@ -88,7 +88,27 @@ export async function mauticApiRequestAllItems(
 		returnData.length - parseInt(responseData.total as string, 10) < 0
 	);
 
-	return returnData;
+	// Deduplicate by 'id' property (defensive for all resources)
+	const seenIds = new Set();
+	const uniqueData = [];
+	for (const item of returnData) {
+		// Only deduplicate if item is an object
+		if (typeof item === 'object' && item !== null) {
+			// Defensive: support both direct id and nested id (e.g., item.fields?.id)
+			const id = (item as { id?: unknown; fields?: { id?: unknown } }).id ?? (item as { fields?: { id?: unknown } }).fields?.id;
+			if (id !== undefined && !seenIds.has(id)) {
+				uniqueData.push(item);
+				seenIds.add(id);
+			} else if (id === undefined) {
+				// If no id, include anyway (could be a non-standard object)
+				uniqueData.push(item);
+			}
+		} else {
+			// If not an object, include anyway
+			uniqueData.push(item);
+		}
+	}
+	return uniqueData;
 }
 
 export function validateJSON(json: string | undefined): any {
