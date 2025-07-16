@@ -1,5 +1,5 @@
 {
-	"node": "n8n-nodes-base.mautic",
+	"node": "n8n-nodes-mautic-advanced.MauticAdvanced",
 	"nodeVersion": "1.0",
 	"codexVersion": "1.0",
 	"categories": ["Marketing", "Communication"],

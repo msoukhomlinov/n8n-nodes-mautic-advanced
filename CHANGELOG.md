@@ -1,5 +1,8 @@
 # Changelog
 
+## [2.0.0] - 16 July 2025
+- Removed max 30 records limit for contacts and companies; these operations now auto-paginate to return all results.
+
 ## [0.1.2] - 16 July 2025
 - Added deduplication logic to all paginated 'get many' operations in `mauticApiRequestAllItems` to ensure unique records are returned for all resources (contacts, companies, campaigns, tags, etc.).
 - This fix prevents duplicate output records when the Mautic API returns overlapping data across pages.

@@ -71,6 +71,7 @@ export async function mauticApiRequestAllItems(
 
 	body: any = {},
 	query: IDataObject = {},
+	maxResults?: number,
 ): Promise<any> {
 	const returnData: IDataObject[] = [];
 
@@ -78,37 +79,24 @@ export async function mauticApiRequestAllItems(
 	query.limit = 30;
 	query.start = 0;
 
+	// Removed unused 'page' variable
 	do {
 		responseData = await mauticApiRequest.call(this, method, endpoint, body, query);
 		const values = Object.values(responseData[propertyName] as IDataObject[]);
-		returnData.push.apply(returnData, values);
+		if (maxResults !== undefined && returnData.length + values.length > maxResults) {
+			const needed = maxResults - returnData.length;
+			returnData.push(...values.slice(0, needed));
+			break;
+		} else {
+			returnData.push(...values);
+		}
 		query.start += query.limit;
 	} while (
-		responseData.total !== undefined &&
-		returnData.length - parseInt(responseData.total as string, 10) < 0
+		(responseData.total !== undefined && returnData.length - parseInt(responseData.total as string, 10) < 0) &&
+		(maxResults === undefined || returnData.length < maxResults)
 	);
 
-	// Deduplicate by 'id' property (defensive for all resources)
-	const seenIds = new Set();
-	const uniqueData = [];
-	for (const item of returnData) {
-		// Only deduplicate if item is an object
-		if (typeof item === 'object' && item !== null) {
-			// Defensive: support both direct id and nested id (e.g., item.fields?.id)
-			const id = (item as { id?: unknown; fields?: { id?: unknown } }).id ?? (item as { fields?: { id?: unknown } }).fields?.id;
-			if (id !== undefined && !seenIds.has(id)) {
-				uniqueData.push(item);
-				seenIds.add(id);
-			} else if (id === undefined) {
-				// If no id, include anyway (could be a non-standard object)
-				uniqueData.push(item);
-			}
-		} else {
-			// If not an object, include anyway
-			uniqueData.push(item);
-		}
-	}
-	return uniqueData;
+	return returnData;
 }
 
 export function validateJSON(json: string | undefined): any {

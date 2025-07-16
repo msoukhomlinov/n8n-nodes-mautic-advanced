@@ -519,10 +519,9 @@ export const companyFields: INodeProperties[] = [
 		},
 		typeOptions: {
 			minValue: 1,
-			maxValue: 30,
 		},
 		default: 30,
-		description: 'Max number of results to return',
+		description: 'Max number of results to return. If you request more than 30 records, the node will automatically use pagination to fetch up to the requested number.',
 	},
 	{
 		displayName: 'Simplify',

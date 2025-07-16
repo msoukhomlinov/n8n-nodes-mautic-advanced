@@ -1,5 +1,5 @@
 {
-	"node": "n8n-nodes-base.mauticTrigger",
+	"node": "n8n-nodes-mautic-advanced.MauticAdvancedTrigger",
 	"nodeVersion": "1.0",
 	"codexVersion": "1.0",
 	"categories": ["Marketing", "Communication"],

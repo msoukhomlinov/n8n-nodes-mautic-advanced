@@ -1002,9 +1002,6 @@ export class MauticAdvanced implements INodeType {
             const options = this.getNodeParameter('options', i);
             qs = Object.assign(qs, options);
             if (qs.orderBy) {
-              // For some reason does camelCase get used in the returned data
-              // but snake_case here. So convert it automatically to not confuse
-              // the users.
               qs.orderBy = snakeCase(qs.orderBy as string);
             }
 
@@ -1018,14 +1015,27 @@ export class MauticAdvanced implements INodeType {
                 qs,
               );
             } else {
-              qs.limit = this.getNodeParameter('limit', i);
-              qs.start = 0;
-              responseData = await mauticApiRequest.call(this, 'GET', '/contacts', {}, qs);
-              if (responseData.errors) {
-                throw new NodeApiError(this.getNode(), responseData as JsonObject);
+              const limit = this.getNodeParameter('limit', i);
+              if (limit > 30) {
+                responseData = await mauticApiRequestAllItems.call(
+                  this,
+                  'contacts',
+                  'GET',
+                  '/contacts',
+                  {},
+                  qs,
+                  limit,
+                );
+              } else {
+                qs.limit = limit;
+                qs.start = 0;
+                responseData = await mauticApiRequest.call(this, 'GET', '/contacts', {}, qs);
+                if (responseData.errors) {
+                  throw new NodeApiError(this.getNode(), responseData as JsonObject);
+                }
+                responseData = responseData.contacts;
+                responseData = Object.values(responseData as IDataObject[]);
               }
-              responseData = responseData.contacts;
-              responseData = Object.values(responseData as IDataObject[]);
             }
             if (options.rawData === false) {
               //@ts-ignore
@@ -1036,14 +1046,29 @@ export class MauticAdvanced implements INodeType {
           if (operation === 'delete') {
             const options = this.getNodeParameter('options', i);
             const contactId = this.getNodeParameter('contactId', i) as string;
-            responseData = await mauticApiRequest.call(
-              this,
-              'DELETE',
-              `/contacts/${contactId}/delete`,
-            );
-            responseData = [responseData.contact];
+            try {
+              responseData = await mauticApiRequest.call(
+                this,
+                'DELETE',
+                `/contacts/${contactId}/delete`,
+              );
+              // Mautic API may return 200 with no 'contact' property or empty body on successful delete
+              if (responseData && responseData.contact !== undefined) {
+                responseData = [responseData.contact];
+              } else {
+                // Return a success message to indicate successful deletion
+                responseData = [{ success: true, message: 'Contact deleted successfully.' }];
+              }
+            } catch (error) {
+              // If the error is a 404 (not found), treat as successful delete (idempotent)
+              if (error instanceof NodeApiError && error.httpCode === '404') {
+                responseData = [{ success: true, message: 'Contact already deleted or not found.' }];
+              } else {
+                throw error;
+              }
+            }
             if (options.rawData === false) {
-              responseData = responseData.map((item) => item.fields.all);
+              responseData = responseData.map((item) => item.fields?.all ?? item);
             }
           }
           //https://developer.mautic.org/#send-email-to-contact
