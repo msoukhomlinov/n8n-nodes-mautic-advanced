@@ -31,6 +31,12 @@ export const contactOperations: INodeProperties[] = [
         action: 'Delete a contact',
       },
       {
+        name: 'Delete Batch',
+        value: 'deleteBatch',
+        description: 'Delete multiple contacts in one operation',
+        action: 'Delete multiple contacts',
+      },
+      {
         name: 'Edit Contact Points',
         value: 'editContactPoint',
         description: "Edit contact's points",
@@ -1329,6 +1335,49 @@ export const contactFields: INodeProperties[] = [
       },
     },
     default: '',
+  },
+
+  /* -------------------------------------------------------------------------- */
+  /*                             contact:deleteBatch                            */
+  /* -------------------------------------------------------------------------- */
+  {
+    displayName: 'Contact IDs',
+    name: 'contactIds',
+    type: 'string',
+    required: false,
+    displayOptions: {
+      show: {
+        resource: ['contact'],
+        operation: ['deleteBatch'],
+      },
+    },
+    default: '',
+    placeholder: '1,2,3,4,5',
+    description:
+      'Comma-separated list of contact IDs to delete (e.g., "1,2,3,4,5"). If left empty, all input items\' contactId fields will be used for batch deletion.',
+  },
+  {
+    displayName: 'Options',
+    name: 'options',
+    type: 'collection',
+    displayOptions: {
+      show: {
+        resource: ['contact'],
+        operation: ['deleteBatch'],
+      },
+    },
+    placeholder: 'Add option',
+    default: {},
+    options: [
+      {
+        displayName: 'RAW Data',
+        name: 'rawData',
+        type: 'boolean',
+        default: true,
+        description:
+          'Whether to return the raw response data from the API or just a success summary',
+      },
+    ],
   },
 
   /* -------------------------------------------------------------------------- */

@@ -338,6 +338,56 @@ export class MauticAdvanced implements INodeType {
     const resource = this.getNodeParameter('resource', 0);
     const operation = this.getNodeParameter('operation', 0);
 
+    // Handle batch operations that process all items together
+    if (resource === 'contact' && operation === 'deleteBatch') {
+      // Only process once for all items
+      const options = this.getNodeParameter('options', 0, {}) as IDataObject;
+      let contactIds = this.getNodeParameter('contactIds', 0, '') as string;
+      if (!contactIds) {
+        // Fallback: collect from all input items
+        const ids = items
+          .map(item => item.json.contactId)
+          .filter(id => id !== undefined && id !== null && id !== '')
+          .map(id => String(id));
+        contactIds = ids.join(',');
+      }
+      if (!contactIds) {
+        throw new NodeOperationError(this.getNode(), 'No contact IDs provided or found in input items.');
+      }
+
+      try {
+        responseData = await mauticApiRequest.call(
+          this,
+          'DELETE',
+          '/contacts/batch/delete',
+          {},
+          { ids: contactIds },
+        );
+
+        if (options.rawData === false) {
+          // Return simplified response
+          responseData = {
+            success: true,
+            deletedIds: contactIds.split(','),
+            message: `Successfully deleted ${contactIds.split(',').length} contacts.`
+          };
+        }
+      } catch (error) {
+        if (error instanceof NodeApiError && error.httpCode === '404') {
+          responseData = {
+            success: true,
+            deletedIds: contactIds.split(','),
+            message: 'Some contacts were already deleted or not found.'
+          };
+        } else {
+          throw error;
+        }
+      }
+
+      // Return as a single output item
+      return [this.helpers.returnJsonArray([responseData])];
+    }
+
     for (let i = 0; i < length; i++) {
       qs = {};
       try {
