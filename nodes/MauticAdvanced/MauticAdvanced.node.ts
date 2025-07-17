@@ -384,6 +384,13 @@ export class MauticAdvanced implements INodeType {
             const returnAll = this.getNodeParameter('returnAll', i) as boolean;
             const options = this.getNodeParameter('options', i) as IDataObject;
             qs = { ...options };
+            // Patch: enforce default sort order by id ascending if not set by user
+            if (!qs.orderBy) {
+              qs.orderBy = 'id';
+            }
+            if (!qs.orderByDir) {
+              qs.orderByDir = 'asc';
+            }
             if (returnAll) {
               responseData = await mauticApiRequestAllItems.call(
                 this,
@@ -666,25 +673,26 @@ export class MauticAdvanced implements INodeType {
             const simple = this.getNodeParameter('simple', i) as boolean;
             const additionalFields = this.getNodeParameter('additionalFields', i);
             qs = Object.assign(qs, additionalFields);
-            if (returnAll) {
-              responseData = await mauticApiRequestAllItems.call(
-                this,
-                'companies',
-                'GET',
-                '/companies',
-                {},
-                qs,
-              );
-            } else {
-              qs.limit = this.getNodeParameter('limit', i);
-              qs.start = 0;
-              responseData = await mauticApiRequest.call(this, 'GET', '/companies', {}, qs);
-              if (responseData.errors) {
-                throw new NodeApiError(this.getNode(), responseData as JsonObject);
-              }
-              responseData = responseData.companies;
-              responseData = Object.values(responseData as IDataObject[]);
+            // Patch: enforce default sort order by id ascending if not set by user
+            if (!qs.orderBy) {
+              qs.orderBy = 'id';
             }
+            if (!qs.orderByDir) {
+              qs.orderByDir = 'asc';
+            }
+            let limit: number | undefined = undefined;
+            if (!returnAll) {
+              limit = this.getNodeParameter('limit', i);
+            }
+            responseData = await mauticApiRequestAllItems.call(
+              this,
+              'companies',
+              'GET',
+              '/companies',
+              {},
+              qs,
+              limit,
+            );
             if (simple) {
               //@ts-ignore
               responseData = responseData.map((item) => item.fields.all);
@@ -736,23 +744,27 @@ export class MauticAdvanced implements INodeType {
           if (operation === 'getAll') {
             const returnAll = this.getNodeParameter('returnAll', i) as boolean;
             const options = this.getNodeParameter('options', i) as IDataObject;
-
             Object.assign(qs, options);
-
-            if (returnAll) {
-              responseData = await mauticApiRequestAllItems.call(
-                this,
-                'tags',
-                'GET',
-                '/tags',
-                {},
-                qs,
-              );
-            } else {
-              qs.limit = this.getNodeParameter('limit', i) as number;
-              responseData = await mauticApiRequest.call(this, 'GET', '/tags', {}, qs);
-              responseData = responseData.tags;
+            // Patch: enforce default sort order by id ascending if not set by user
+            if (!qs.orderBy) {
+              qs.orderBy = 'id';
             }
+            if (!qs.orderByDir) {
+              qs.orderByDir = 'asc';
+            }
+            let limit: number | undefined = undefined;
+            if (!returnAll) {
+              limit = this.getNodeParameter('limit', i) as number;
+            }
+            responseData = await mauticApiRequestAllItems.call(
+              this,
+              'tags',
+              'GET',
+              '/tags',
+              {},
+              qs,
+              limit,
+            );
           }
           if (operation === 'delete') {
             const tagId = this.getNodeParameter('tagId', i) as string;
@@ -1001,42 +1013,30 @@ export class MauticAdvanced implements INodeType {
             const returnAll = this.getNodeParameter('returnAll', i);
             const options = this.getNodeParameter('options', i);
             qs = Object.assign(qs, options);
+            // Patch: enforce default sort order by id ascending if not set by user
+            if (!qs.orderBy) {
+              qs.orderBy = 'id';
+            }
+            if (!qs.orderByDir) {
+              qs.orderByDir = 'asc';
+            }
             if (qs.orderBy) {
               qs.orderBy = snakeCase(qs.orderBy as string);
             }
 
-            if (returnAll) {
-              responseData = await mauticApiRequestAllItems.call(
-                this,
-                'contacts',
-                'GET',
-                '/contacts',
-                {},
-                qs,
-              );
-            } else {
-              const limit = this.getNodeParameter('limit', i);
-              if (limit > 30) {
-                responseData = await mauticApiRequestAllItems.call(
-                  this,
-                  'contacts',
-                  'GET',
-                  '/contacts',
-                  {},
-                  qs,
-                  limit,
-                );
-              } else {
-                qs.limit = limit;
-                qs.start = 0;
-                responseData = await mauticApiRequest.call(this, 'GET', '/contacts', {}, qs);
-                if (responseData.errors) {
-                  throw new NodeApiError(this.getNode(), responseData as JsonObject);
-                }
-                responseData = responseData.contacts;
-                responseData = Object.values(responseData as IDataObject[]);
-              }
+            let limit: number | undefined = undefined;
+            if (!returnAll) {
+              limit = this.getNodeParameter('limit', i);
             }
+            responseData = await mauticApiRequestAllItems.call(
+              this,
+              'contacts',
+              'GET',
+              '/contacts',
+              {},
+              qs,
+              limit,
+            );
             if (options.rawData === false) {
               //@ts-ignore
               responseData = responseData.map((item) => item.fields.all);
@@ -1364,23 +1364,27 @@ export class MauticAdvanced implements INodeType {
           if (operation === 'getAll') {
             const returnAll = this.getNodeParameter('returnAll', i) as boolean;
             const options = this.getNodeParameter('options', i) as IDataObject;
-
             Object.assign(qs, options);
-
-            if (returnAll) {
-              responseData = await mauticApiRequestAllItems.call(
-                this,
-                'categories',
-                'GET',
-                '/categories',
-                {},
-                qs,
-              );
-            } else {
-              qs.limit = this.getNodeParameter('limit', i) as number;
-              responseData = await mauticApiRequest.call(this, 'GET', '/categories', {}, qs);
-              responseData = responseData.categories;
+            // Patch: enforce default sort order by id ascending if not set by user
+            if (!qs.orderBy) {
+              qs.orderBy = 'id';
             }
+            if (!qs.orderByDir) {
+              qs.orderByDir = 'asc';
+            }
+            let limit: number | undefined = undefined;
+            if (!returnAll) {
+              limit = this.getNodeParameter('limit', i) as number;
+            }
+            responseData = await mauticApiRequestAllItems.call(
+              this,
+              'categories',
+              'GET',
+              '/categories',
+              {},
+              qs,
+              limit,
+            );
           }
           if (operation === 'delete') {
             const categoryId = this.getNodeParameter('categoryId', i) as string;

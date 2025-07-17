@@ -63,40 +63,52 @@ export async function mauticApiRequest(
  * Make an API request to paginated mautic endpoint
  * and return all results
  */
+// Optional: Slightly improved error handling
 export async function mauticApiRequestAllItems(
-	this: IHookFunctions | IExecuteFunctions | ILoadOptionsFunctions,
-	propertyName: string,
-	method: IHttpRequestMethods,
-	endpoint: string,
-
-	body: any = {},
-	query: IDataObject = {},
-	maxResults?: number,
+  this: IHookFunctions | IExecuteFunctions | ILoadOptionsFunctions,
+  propertyName: string,
+  method: IHttpRequestMethods,
+  endpoint: string,
+  body: any = {},
+  query: IDataObject = {},
+  maxResults?: number,
 ): Promise<any> {
-	const returnData: IDataObject[] = [];
+  const returnData: IDataObject[] = [];
+  let responseData;
+  query.limit = 30;
+  query.start = 0;
 
-	let responseData;
-	query.limit = 30;
-	query.start = 0;
-
-	// Removed unused 'page' variable
-	do {
-		responseData = await mauticApiRequest.call(this, method, endpoint, body, query);
-		const values = Object.values(responseData[propertyName] as IDataObject[]);
-		if (maxResults !== undefined && returnData.length + values.length > maxResults) {
-			const needed = maxResults - returnData.length;
-			returnData.push(...values.slice(0, needed));
-			break;
-		} else {
-			returnData.push(...values);
-		}
-		query.start += query.limit;
-	} while (
-		(responseData.total !== undefined && returnData.length - parseInt(responseData.total as string, 10) < 0) &&
-		(maxResults === undefined || returnData.length < maxResults)
-	);
-
-	return returnData;
+  while (true) {
+    try {
+      responseData = await mauticApiRequest.call(this, method, endpoint, body, query);
+      if (responseData.errors) {
+        throw new NodeApiError(this.getNode(), responseData as JsonObject);
+      }
+      const pageItems = responseData[propertyName] ? Object.values(responseData[propertyName] as IDataObject[]) : [];
+      if (!pageItems.length) {
+        break;
+      }
+      if (maxResults !== undefined && returnData.length + pageItems.length > maxResults) {
+        const needed = maxResults - returnData.length;
+        returnData.push(...pageItems.slice(0, needed));
+        break;
+      } else {
+        returnData.push(...pageItems);
+      }
+      query.start = Number(query.start) + pageItems.length;
+      // If less than limit returned, no more data
+      if (pageItems.length < Number(query.limit)) {
+        break;
+      }
+    } catch (error) {
+      // Optional: Only wrap non-NodeApiError errors
+      if (error instanceof NodeApiError) {
+        throw error;
+      }
+      throw new NodeApiError(this.getNode(), error as JsonObject);
+    }
+  }
+  return returnData;
 }
 
 export function validateJSON(json: string | undefined): any {
