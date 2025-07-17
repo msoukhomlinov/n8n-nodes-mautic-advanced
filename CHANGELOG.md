@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.2.5] - 2025-07-17
+### Added
+- Support for segments
+
+### Fixed
+- Corrected extraction of segment data for all segment operations to use the correct property names (`list` and `lists`) as returned by the Mautic API.
+- Fixed 'Get Many Segments' to output an array of segment items instead of a single object, matching n8n conventions.
+- Removed debugging statements from segment operations.
+
 ## [0.2.2] - 2025-07-17
 ### Added
 - New 'Delete Batch' operation for the Contact resource. This allows batch deletion of contacts in a single API call, processing all incoming items together instead of one at a time.

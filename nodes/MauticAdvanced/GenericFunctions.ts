@@ -1,62 +1,66 @@
 import type {
-	IDataObject,
-	IExecuteFunctions,
-	IHookFunctions,
-	IHttpRequestMethods,
-	ILoadOptionsFunctions,
-	IRequestOptions,
-	JsonObject,
+  IDataObject,
+  IExecuteFunctions,
+  IHookFunctions,
+  IHttpRequestMethods,
+  ILoadOptionsFunctions,
+  IRequestOptions,
+  JsonObject,
 } from 'n8n-workflow';
 import { NodeApiError } from 'n8n-workflow';
 
 export async function mauticApiRequest(
-	this: IHookFunctions | IExecuteFunctions | ILoadOptionsFunctions,
-	method: IHttpRequestMethods,
-	endpoint: string,
+  this: IHookFunctions | IExecuteFunctions | ILoadOptionsFunctions,
+  method: IHttpRequestMethods,
+  endpoint: string,
 
-	body: any = {},
-	query?: IDataObject,
-	uri?: string,
+  body: any = {},
+  query?: IDataObject,
+  uri?: string,
 ): Promise<any> {
-	const authenticationMethod = this.getNodeParameter('authentication', 0, 'credentials') as string;
+  const authenticationMethod = this.getNodeParameter('authentication', 0, 'credentials') as string;
 
-	const options: IRequestOptions = {
-		headers: {},
-		method,
-		qs: query,
-		uri: uri || `/api${endpoint}`,
-		body,
-		json: true,
-	};
+  const options: IRequestOptions = {
+    headers: {},
+    method,
+    qs: query,
+    uri: uri || `/api${endpoint}`,
+    body,
+    json: true,
+  };
 
-	try {
-		let returnData;
+  try {
+    let returnData;
 
-		if (authenticationMethod === 'credentials') {
-			const credentials = await this.getCredentials('mauticAdvancedApi');
-			const baseUrl = credentials.url as string;
+    if (authenticationMethod === 'credentials') {
+      const credentials = await this.getCredentials('mauticAdvancedApi');
+      const baseUrl = credentials.url as string;
 
-			options.uri = `${baseUrl.endsWith('/') ? baseUrl.slice(0, -1) : baseUrl}${options.uri}`;
-			returnData = await this.helpers.requestWithAuthentication.call(this, 'mauticAdvancedApi', options);
-		} else {
-			const credentials = await this.getCredentials('mauticAdvancedOAuth2Api');
-			const baseUrl = credentials.url as string;
+      options.uri = `${baseUrl.endsWith('/') ? baseUrl.slice(0, -1) : baseUrl}${options.uri}`;
+      returnData = await this.helpers.requestWithAuthentication.call(
+        this,
+        'mauticAdvancedApi',
+        options,
+      );
+    } else {
+      const credentials = await this.getCredentials('mauticAdvancedOAuth2Api');
+      const baseUrl = credentials.url as string;
 
-			options.uri = `${baseUrl.endsWith('/') ? baseUrl.slice(0, -1) : baseUrl}${options.uri}`;
-			returnData = await this.helpers.requestOAuth2.call(this, 'mauticAdvancedOAuth2Api', options, {
-				includeCredentialsOnRefreshOnBody: true,
-			});
-		}
+      options.uri = `${baseUrl.endsWith('/') ? baseUrl.slice(0, -1) : baseUrl}${options.uri}`;
+      returnData = await this.helpers.requestOAuth2.call(this, 'mauticAdvancedOAuth2Api', options, {
+        includeCredentialsOnRefreshOnBody: true,
+      });
+    }
 
-		if (returnData.errors) {
-			// They seem to sometimes return 200 status but still error.
-			throw new NodeApiError(this.getNode(), returnData as JsonObject);
-		}
+    if (returnData.errors) {
+      // They seem to sometimes return 200 status but still error.
+      throw new NodeApiError(this.getNode(), returnData as JsonObject);
+    }
 
-		return returnData;
-	} catch (error) {
-		throw new NodeApiError(this.getNode(), error as JsonObject);
-	}
+    return returnData;
+  } catch (error) {
+    throw new NodeApiError(this.getNode(), error as JsonObject);
+  }
 }
 
 /**
@@ -81,10 +85,13 @@ export async function mauticApiRequestAllItems(
   while (true) {
     try {
       responseData = await mauticApiRequest.call(this, method, endpoint, body, query);
+
       if (responseData.errors) {
         throw new NodeApiError(this.getNode(), responseData as JsonObject);
       }
-      const pageItems = responseData[propertyName] ? Object.values(responseData[propertyName] as IDataObject[]) : [];
+      const pageItems = responseData[propertyName]
+        ? Object.values(responseData[propertyName] as IDataObject[])
+        : [];
       if (!pageItems.length) {
         break;
       }
@@ -112,11 +119,11 @@ export async function mauticApiRequestAllItems(
 }
 
 export function validateJSON(json: string | undefined): any {
-	let result;
-	try {
-		result = JSON.parse(json!);
-	} catch (exception) {
-		result = undefined;
-	}
-	return result;
+  let result;
+  try {
+    result = JSON.parse(json!);
+  } catch (exception) {
+    result = undefined;
+  }
+  return result;
 }

@@ -1318,7 +1318,8 @@ export const contactFields: INodeProperties[] = [
       minValue: 1,
     },
     default: 30,
-    description: 'Max number of results to return. If you request more than 30 records, the node will automatically use pagination to fetch up to the requested number.',
+    description:
+      'Max number of results to return. If you request more than 30 records, the node will automatically use pagination to fetch up to the requested number.',
   },
 
   /* -------------------------------------------------------------------------- */
@@ -1392,7 +1393,7 @@ export const contactFields: INodeProperties[] = [
         resource: ['contact'],
       },
       hide: {
-        operation: ['sendEmail', 'editDoNotContactList', 'editContactPoint'],
+        operation: ['sendEmail', 'editDoNotContactList', 'editContactPoint', 'deleteBatch'],
       },
     },
     placeholder: 'Add option',

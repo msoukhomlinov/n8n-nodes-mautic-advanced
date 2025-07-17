@@ -1,6 +1,6 @@
 {
   "name": "n8n-nodes-mautic-advanced",
-  "version": "0.2.1",
+  "version": "0.2.5",
   "description": "Enhanced n8n node for Mautic with comprehensive API coverage including tags, campaigns, categories, and advanced contact management",
   "keywords": [
     "n8n",
@@ -54,7 +54,9 @@
     "@typescript-eslint/eslint-plugin": "^7.7.0",
     "@typescript-eslint/parser": "^7.7.0",
     "eslint": "^8.57.0",
+    "eslint-config-prettier": "^10.1.5",
     "eslint-plugin-n8n-nodes-base": "^1.16.3",
+    "eslint-plugin-prettier": "^5.5.1",
     "gulp": "^4.0.2",
     "n8n-workflow": "^1.70.0",
     "prettier": "^3.2.5",
