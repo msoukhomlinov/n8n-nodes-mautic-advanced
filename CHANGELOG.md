@@ -1,4 +1,10 @@
 # Changelog
+## [0.3.0] - 2025-07-22
+### Added
+- Advanced filtering: Added 'Where' advanced filter for Contact > Get Many, supporting nested andX/orX, date, and custom/system fields.
+- System fields: Added system fields (date_added, date_modified, id, owner_id, email_dnc, dnc, sms_dnc) to advanced filter dropdown.
+- DNC filtering: Users can now filter contacts by Do Not Contact status for email and SMS (done post processing)
+- Field selection: Users can now choose which fields to return for Contact > Get and Get Many operations, using a multi-select 'Fields to Return' option.
 
 ## [0.2.5] - 2025-07-17
 ### Added

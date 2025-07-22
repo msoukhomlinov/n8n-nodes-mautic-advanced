@@ -118,6 +118,39 @@ export async function mauticApiRequestAllItems(
   return returnData;
 }
 
+/**
+ * Serialise the n8n fixedCollection 'where' structure into Mautic API query parameters.
+ * Handles nested andX/orX logic recursively.
+ * @param whereArray Array of conditions from the fixedCollection
+ * @param prefix Used internally for recursion (should be omitted by callers)
+ * @returns Object with keys/values for qs
+ */
+export function serialiseMauticWhere(whereArray: any[], prefix = 'where'): IDataObject {
+  const params: IDataObject = {};
+  whereArray.forEach((condition, idx) => {
+    const base = `${prefix}[${idx}]`;
+    if (condition.expr === 'andX' || condition.expr === 'orX') {
+      params[`${base}[expr]`] = condition.expr;
+      // Nested conditions: recurse
+      if (condition.nested && Array.isArray(condition.nested.conditions)) {
+        // The value for 'val' is an array of nested conditions
+        const nestedParams = serialiseMauticWhere(condition.nested.conditions, `${base}[val]`);
+        Object.assign(params, nestedParams);
+      } else {
+        // Defensive: empty group
+        params[`${base}[val]`] = [];
+      }
+    } else {
+      // Simple condition
+      if (condition.col) params[`${base}[col]`] = condition.col;
+      if (condition.expr) params[`${base}[expr]`] = condition.expr;
+      if (condition.val !== undefined && condition.val !== '')
+        params[`${base}[val]`] = condition.val;
+    }
+  });
+  return params;
+}
+
 export function validateJSON(json: string | undefined): any {
   let result;
   try {

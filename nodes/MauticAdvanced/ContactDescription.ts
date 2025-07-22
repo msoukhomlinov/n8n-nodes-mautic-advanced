@@ -1286,6 +1286,40 @@ export const contactFields: INodeProperties[] = [
     },
     default: '',
   },
+  {
+    displayName: 'Options',
+    name: 'options',
+    type: 'collection',
+    placeholder: 'Add Option',
+    default: {},
+    displayOptions: {
+      show: {
+        resource: ['contact'],
+        operation: ['get'],
+      },
+    },
+    options: [
+      {
+        displayName: 'Fields to Return',
+        name: 'fieldsToReturn',
+        type: 'multiOptions',
+        typeOptions: {
+          loadOptionsMethod: 'getContactFields',
+        },
+        default: [],
+        description:
+          'Select which fields to include in the output. Leave empty to return all fields.',
+      },
+      {
+        displayName: 'RAW Data',
+        name: 'rawData',
+        type: 'boolean',
+        default: true,
+        description:
+          'By default only the data of the fields get returned. If this option is set, the RAW response with all data gets returned.',
+      },
+    ],
+  },
 
   /* -------------------------------------------------------------------------- */
   /*                                contact:getAll                              */
@@ -1322,83 +1356,30 @@ export const contactFields: INodeProperties[] = [
       'Max number of results to return. If you request more than 30 records, the node will automatically use pagination to fetch up to the requested number.',
   },
 
-  /* -------------------------------------------------------------------------- */
-  /*                               contact:delete                               */
-  /* -------------------------------------------------------------------------- */
-  {
-    displayName: 'Contact ID',
-    name: 'contactId',
-    type: 'string',
-    displayOptions: {
-      show: {
-        operation: ['delete'],
-        resource: ['contact'],
-      },
-    },
-    default: '',
-  },
-
-  /* -------------------------------------------------------------------------- */
-  /*                             contact:deleteBatch                            */
-  /* -------------------------------------------------------------------------- */
-  {
-    displayName: 'Contact IDs',
-    name: 'contactIds',
-    type: 'string',
-    required: false,
-    displayOptions: {
-      show: {
-        resource: ['contact'],
-        operation: ['deleteBatch'],
-      },
-    },
-    default: '',
-    placeholder: '1,2,3,4,5',
-    description:
-      'Comma-separated list of contact IDs to delete (e.g., "1,2,3,4,5"). If left empty, all input items\' contactId fields will be used for batch deletion.',
-  },
   {
     displayName: 'Options',
     name: 'options',
     type: 'collection',
+    placeholder: 'Add Option',
+    default: {},
     displayOptions: {
       show: {
         resource: ['contact'],
-        operation: ['deleteBatch'],
+        operation: ['getAll'],
       },
     },
-    placeholder: 'Add option',
-    default: {},
     options: [
       {
-        displayName: 'RAW Data',
-        name: 'rawData',
-        type: 'boolean',
-        default: true,
+        displayName: 'Fields to Return',
+        name: 'fieldsToReturn',
+        type: 'multiOptions',
+        typeOptions: {
+          loadOptionsMethod: 'getContactFields',
+        },
+        default: [],
         description:
-          'Whether to return the raw response data from the API or just a success summary',
+          'Select which fields to include in the output. Leave empty to return all fields.',
       },
-    ],
-  },
-
-  /* -------------------------------------------------------------------------- */
-  /*                                 contact:all                                */
-  /* -------------------------------------------------------------------------- */
-  {
-    displayName: 'Options',
-    name: 'options',
-    type: 'collection',
-    displayOptions: {
-      show: {
-        resource: ['contact'],
-      },
-      hide: {
-        operation: ['sendEmail', 'editDoNotContactList', 'editContactPoint', 'deleteBatch'],
-      },
-    },
-    placeholder: 'Add option',
-    default: {},
-    options: [
       {
         displayName: 'Search',
         name: 'search',
@@ -1475,13 +1456,163 @@ export const contactFields: INodeProperties[] = [
         description: 'Whether to return array of entities without additional lists in it',
       },
       {
+        displayName: 'Where',
+        name: 'where',
+        type: 'fixedCollection',
+        placeholder: 'Add Condition',
+        typeOptions: {
+          multipleValues: true,
+        },
+        default: {},
+        options: [
+          {
+            name: 'conditions',
+            displayName: 'Condition',
+            values: [
+              {
+                displayName: 'Column',
+                name: 'col',
+                type: 'options',
+                typeOptions: {
+                  loadOptionsMethod: 'getContactFields',
+                },
+                default: '',
+                description: 'Database column (snake_case, e.g. date_modified, or custom field)',
+              },
+              {
+                displayName: 'Expression',
+                name: 'expr',
+                type: 'options',
+                options: [
+                  { name: 'Equals', value: 'eq' },
+                  { name: 'Not Equals', value: 'neq' },
+                  { name: 'Less Than', value: 'lt' },
+                  { name: 'Less Than or Equal', value: 'lte' },
+                  { name: 'Greater Than', value: 'gt' },
+                  { name: 'Greater Than or Equal', value: 'gte' },
+                  { name: 'Between', value: 'between' },
+                  { name: 'In', value: 'in' },
+                  { name: 'Is Null', value: 'isNull' },
+                  { name: 'Is Not Null', value: 'isNotNull' },
+                  { name: 'AND (andX)', value: 'andX' },
+                  { name: 'OR (orX)', value: 'orX' },
+                ],
+                default: 'eq',
+                description: 'Comparison expression',
+              },
+              {
+                displayName: 'Value',
+                name: 'val',
+                type: 'string',
+                default: '',
+                description:
+                  'Value for the condition. For andX/orX, leave blank and use nested conditions below.',
+                displayOptions: {
+                  hide: {
+                    expr: ['andX', 'orX'],
+                  },
+                },
+              },
+              {
+                displayName: 'Nested Conditions',
+                name: 'nested',
+                type: 'fixedCollection',
+                typeOptions: {
+                  multipleValues: true,
+                },
+                default: {},
+                options: [
+                  {
+                    name: 'conditions',
+                    displayName: 'Condition',
+                    values: [
+                      {
+                        displayName: 'Column',
+                        name: 'col',
+                        type: 'options',
+                        typeOptions: {
+                          loadOptionsMethod: 'getContactFields',
+                        },
+                        default: '',
+                        description:
+                          'Database column (snake_case, e.g. date_modified, or custom field)',
+                      },
+                      {
+                        displayName: 'Expression',
+                        name: 'expr',
+                        type: 'options',
+                        options: [
+                          { name: 'Equals', value: 'eq' },
+                          { name: 'Not Equals', value: 'neq' },
+                          { name: 'Less Than', value: 'lt' },
+                          { name: 'Less Than or Equal', value: 'lte' },
+                          { name: 'Greater Than', value: 'gt' },
+                          { name: 'Greater Than or Equal', value: 'gte' },
+                          { name: 'Between', value: 'between' },
+                          { name: 'In', value: 'in' },
+                          { name: 'Is Null', value: 'isNull' },
+                          { name: 'Is Not Null', value: 'isNotNull' },
+                          { name: 'AND (andX)', value: 'andX' },
+                          { name: 'OR (orX)', value: 'orX' },
+                        ],
+                        default: 'eq',
+                        description: 'Comparison expression',
+                      },
+                      {
+                        displayName: 'Value',
+                        name: 'val',
+                        type: 'string',
+                        default: '',
+                        description:
+                          'Value for the condition. For andX/orX, leave blank and use nested conditions below.',
+                        displayOptions: {
+                          hide: {
+                            expr: ['andX', 'orX'],
+                          },
+                        },
+                      },
+                      // Nested again for further levels if needed (recursive pattern)
+                    ],
+                  },
+                ],
+                displayOptions: {
+                  show: {
+                    expr: ['andX', 'orX'],
+                  },
+                },
+              },
+            ],
+          },
+        ],
+      },
+      {
+        displayName: 'Email Do Not Contact Only',
+        name: 'emailDncOnly',
+        type: 'boolean',
+        default: false,
+        description: 'Return only contacts with Email Do Not Contact enabled',
+      },
+      {
+        displayName: 'SMS Do Not Contact Only',
+        name: 'smsDncOnly',
+        type: 'boolean',
+        default: false,
+        description: 'Return only contacts with SMS Do Not Contact enabled',
+      },
+      {
+        displayName: 'Any Do Not Contact Only',
+        name: 'anyDncOnly',
+        type: 'boolean',
+        default: false,
+        description: 'Return only contacts with any Do Not Contact enabled',
+      },
+      {
         displayName: 'RAW Data',
         name: 'rawData',
         type: 'boolean',
         default: true,
-        // eslint-disable-next-line n8n-nodes-base/node-param-description-boolean-without-whether
         description:
-          'By default only the data of the fields get returned. If this options gets set the RAW response with all data gets returned.',
+          'By default only the data of the fields get returned. If this option gets set the RAW response with all data gets returned.',
       },
     ],
   },
