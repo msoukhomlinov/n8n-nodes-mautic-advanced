@@ -1,4 +1,8 @@
 # Changelog
+## [0.3.1] - 2025-07-22
+### Fixed
+- Automatically format date filter values for known date fields to 'YYYY-MM-DD HH:mm:ss' UTC for Mautic API compatibility.
+
 ## [0.3.0] - 2025-07-22
 ### Added
 - Advanced filtering: Added 'Where' advanced filter for Contact > Get Many, supporting nested andX/orX, date, and custom/system fields.

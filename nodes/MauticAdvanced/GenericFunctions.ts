@@ -127,6 +127,14 @@ export async function mauticApiRequestAllItems(
  */
 export function serialiseMauticWhere(whereArray: any[], prefix = 'where'): IDataObject {
   const params: IDataObject = {};
+  const dateFields = [
+    'date_modified',
+    'date_added',
+    'last_active',
+    'date_identified',
+    'dateFrom',
+    'dateTo',
+  ];
   whereArray.forEach((condition, idx) => {
     const base = `${prefix}[${idx}]`;
     if (condition.expr === 'andX' || condition.expr === 'orX') {
@@ -144,8 +152,24 @@ export function serialiseMauticWhere(whereArray: any[], prefix = 'where'): IData
       // Simple condition
       if (condition.col) params[`${base}[col]`] = condition.col;
       if (condition.expr) params[`${base}[expr]`] = condition.expr;
-      if (condition.val !== undefined && condition.val !== '')
-        params[`${base}[val]`] = condition.val;
+      if (condition.val !== undefined && condition.val !== '') {
+        let val = condition.val;
+        // Auto-format date values for known date fields
+        if (
+          condition.col &&
+          dateFields.includes(condition.col) &&
+          typeof val === 'string' &&
+          (val.includes('T') || val.match(/^\d{4}-\d{2}-\d{2}/))
+        ) {
+          // Try to parse and format as UTC 'YYYY-MM-DD HH:mm:ss'
+          const d = new Date(val);
+          if (!isNaN(d.getTime())) {
+            const pad = (n: number) => n.toString().padStart(2, '0');
+            val = `${d.getUTCFullYear()}-${pad(d.getUTCMonth() + 1)}-${pad(d.getUTCDate())} ${pad(d.getUTCHours())}:${pad(d.getUTCMinutes())}:${pad(d.getUTCSeconds())}`;
+          }
+        }
+        params[`${base}[val]`] = val;
+      }
     }
   });
   return params;
