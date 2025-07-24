@@ -1,4 +1,10 @@
 # Changelog
+
+
+## [0.3.2] - 2025-07-24
+### Fixed
+- Fixed "Could not get parameter 'options'" error when using expressions in Contact Create and Contact Update operations.
+
 ## [0.3.1] - 2025-07-22
 ### Fixed
 - Automatically format date filter values for known date fields to 'YYYY-MM-DD HH:mm:ss' UTC for Mautic API compatibility.

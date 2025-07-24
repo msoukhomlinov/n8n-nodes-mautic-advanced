@@ -124,6 +124,29 @@ export const contactFields: INodeProperties[] = [
     },
   },
   {
+    displayName: 'Options',
+    name: 'options',
+    type: 'collection',
+    placeholder: 'Add Option',
+    default: {},
+    displayOptions: {
+      show: {
+        resource: ['contact'],
+        operation: ['create'],
+      },
+    },
+    options: [
+      {
+        displayName: 'RAW Data',
+        name: 'rawData',
+        type: 'boolean',
+        default: true,
+        description:
+          'By default only the data of the fields get returned. If this option is set, the RAW response with all data gets returned.',
+      },
+    ],
+  },
+  {
     displayName: 'Email',
     name: 'email',
     type: 'string',
@@ -659,6 +682,29 @@ export const contactFields: INodeProperties[] = [
         resource: ['contact'],
       },
     },
+  },
+  {
+    displayName: 'Options',
+    name: 'options',
+    type: 'collection',
+    placeholder: 'Add Option',
+    default: {},
+    displayOptions: {
+      show: {
+        resource: ['contact'],
+        operation: ['update'],
+      },
+    },
+    options: [
+      {
+        displayName: 'RAW Data',
+        name: 'rawData',
+        type: 'boolean',
+        default: true,
+        description:
+          'By default only the data of the fields get returned. If this option is set, the RAW response with all data gets returned.',
+      },
+    ],
   },
   {
     displayName: 'Update Fields',
