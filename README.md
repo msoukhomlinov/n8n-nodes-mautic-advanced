@@ -2,7 +2,22 @@
 
 [![Buy Me A Coffee](https://img.shields.io/badge/Buy%20Me%20A%20Coffee-Support-yellow.svg)](https://buymeacoffee.com/msoukhomlinov)
 
-This project is an enhanced Mautic node for n8n, designed to provide more comprehensive support for the Mautic API. It builds upon the standard Mautic node by adding new resources and operations.
+Enhanced n8n node for Mautic with comprehensive API coverage including tags, campaigns, categories, and advanced contact management.
+
+## 📋 Table of Contents
+
+- [What Makes This "Advanced"?](#what-makes-this-advanced)
+- [Features](#features)
+- [Supported Resources and Operations](#supported-resources-and-operations)
+- [Installation](#installation)
+- [Authentication](#authentication)
+- [Advanced Features](#advanced-features)
+- [Usage Examples](#usage-examples)
+- [Development](#development)
+- [Troubleshooting](#troubleshooting)
+- [Changelog](#changelog)
+- [Support](#support)
+- [License](#license)
 
 ## What Makes This "Advanced"?
 
@@ -15,12 +30,31 @@ This enhanced version extends the standard n8n Mautic node with:
 - **📧 Enhanced Email Operations**: Segment-based email sending capabilities
 - **👥 Extended Contact Operations**: UTM tag management, activity tracking, device information, and notes
 - **🏢 Complete Company Management**: Full company lifecycle with custom fields and address support
+- **🔍 Advanced Filtering**: Where filters, DNC filtering, and field selection
+- **📅 Smart Date Handling**: Automatic date formatting for Mautic API compatibility
 
-All resources support comprehensive filtering, pagination, and custom field management where applicable.
+## Features
+
+### 🚀 Core Features
+- **Comprehensive API Coverage**: All major Mautic API endpoints supported
+- **Advanced Filtering**: Where filters with nested conditions (andX/orX)
+- **DNC Management**: Filter contacts by Do Not Contact status
+- **Field Selection**: Choose which fields to return for Contact operations
+- **Pagination Support**: Automatic handling of large datasets
+- **Custom Fields**: Full support for custom field management
+- **Error Handling**: Robust error handling and validation
+
+### 🔐 Authentication
+- **API Credentials**: Simple API key authentication
+- **OAuth2**: Full OAuth2 flow support for secure authentication
+
+### 📊 Data Management
+- **RAW Data Options**: Control data output format
+- **System Fields**: Built-in support for system fields
+- **Date Formatting**: Automatic UTC date formatting
+- **Deduplication**: Prevents duplicate records in paginated results
 
 ## Supported Resources and Operations
-
-This enhanced Mautic node provides comprehensive support for the following Mautic API resources:
 
 ### 🏢 Companies
 - **Create** a new company with full address and custom field support
@@ -31,10 +65,11 @@ This enhanced Mautic node provides comprehensive support for the following Mauti
 
 ### 👥 Contacts (Enhanced)
 - **Create** a new contact with extensive field options
-- **Get** a contact by ID
-- **Get Many** contacts with advanced filtering
+- **Get** a contact by ID with field selection
+- **Get Many** contacts with advanced filtering and DNC options
 - **Update** contact details
 - **Delete** a contact
+- **Delete Batch** multiple contacts in one operation
 - **Send Email** to a contact
 - **Edit Contact Points** (add/subtract points)
 - **Edit Do Not Contact List** (add/remove from DNC)
@@ -67,6 +102,13 @@ This enhanced Mautic node provides comprehensive support for the following Mauti
 - **Update** category details
 - **Delete** a category
 
+### 📋 Segments
+- **Create** a new segment
+- **Get** a segment by ID
+- **Get Many** segments with filtering
+- **Update** segment details
+- **Delete** a segment
+
 ### 🔗 Relationship Management
 - **Campaign Contact**: Add/remove contacts to/from campaigns
 - **Company Contact**: Add/remove contacts to/from companies
@@ -77,18 +119,204 @@ This enhanced Mautic node provides comprehensive support for the following Mauti
 
 ## Installation
 
-To use this node, you will need to clone this repository and link it to your n8n instance.
+### Method 1: npm (Recommended)
+```bash
+npm install n8n-nodes-mautic-advanced
+```
 
-1. Clone this repository.
-2. Run `npm install` in the project root.
-3. Run `npm run build` to compile the TypeScript code.
-4. Link the node to your n8n installation by running `npm link` in the project root, and then `npm link n8n-nodes-mautic-advanced` in your n8n installation directory.
+### Method 2: Manual Installation
+1. Clone this repository:
+   ```bash
+   git clone https://github.com/msoukhomlinov/n8n-nodes-mautic-advanced.git
+   cd n8n-nodes-mautic-advanced
+   ```
+
+2. Install dependencies:
+   ```bash
+   npm install
+   ```
+
+3. Build the node:
+   ```bash
+   npm run build
+   ```
+
+4. Link to your n8n installation:
+   ```bash
+   npm link
+   cd /path/to/your/n8n/installation
+   npm link n8n-nodes-mautic-advanced
+   ```
+
+## Authentication
+
+### API Credentials
+1. Go to your Mautic instance
+2. Navigate to **Settings** → **API Credentials**
+3. Create a new API credential
+4. Copy the **Public Key** and **Secret Key**
+5. In n8n, add a new Mautic Advanced credential
+6. Select **Credentials** authentication method
+7. Enter your Mautic URL, Public Key, and Secret Key
+
+### OAuth2
+1. In n8n, add a new Mautic Advanced credential
+2. Select **OAuth2** authentication method
+3. Enter your Mautic URL
+4. Follow the OAuth2 authorization flow
+
+## Advanced Features
+
+### Where Filters
+Advanced filtering for Contact > Get Many operations:
+- **Nested Conditions**: Support for andX/orX logical operators
+- **Multiple Expressions**: eq, neq, lt, lte, gt, gte, between, in, isNull, isNotNull
+- **Custom Fields**: Filter by any custom or system field
+- **Date Filtering**: Automatic date formatting for Mautic API
+
+### DNC Filtering
+Filter contacts by Do Not Contact status:
+- **Email DNC Only**: Contacts with email DNC enabled
+- **SMS DNC Only**: Contacts with SMS DNC enabled
+- **Any DNC Only**: Contacts with any DNC enabled
+
+### Field Selection
+Choose which fields to return for Contact operations:
+- **System Fields**: date_added, date_modified, id, owner_id
+- **Custom Fields**: Any custom field defined in Mautic
+- **All Fields**: Return complete contact data
+
+### Date Formatting
+Automatic date formatting for known date fields:
+- **Format**: YYYY-MM-DD HH:mm:ss UTC
+- **Compatibility**: Ensures Mautic API compatibility
+- **Fields**: date_added, date_modified, lastActive, etc.
+
+## Usage Examples
+
+### Create a Contact with Tags
+```javascript
+// Contact Create operation
+{
+  "email": "john.doe@example.com",
+  "firstName": "John",
+  "lastName": "Doe",
+  "additionalFields": {
+    "tags": ["customer", "vip"],
+    "company": "Example Corp",
+    "phone": "+1234567890"
+  }
+}
+```
+
+### Filter Contacts with Where Conditions
+```javascript
+// Contact Get Many with Where filter
+{
+  "where": {
+    "conditions": [
+      {
+        "col": "email",
+        "expr": "neq",
+        "val": ""
+      },
+      {
+        "col": "date_added",
+        "expr": "gte",
+        "val": "2024-01-01"
+      }
+    ]
+  }
+}
+```
+
+### Send Email to Segment
+```javascript
+// Segment Email operation
+{
+  "segmentId": "123",
+  "emailId": "456",
+  "options": {
+    "sendToNewOnly": true
+  }
+}
+```
 
 ## Development
 
-- `npm run dev`: To watch for changes and automatically recompile.
-- `npm run lint`: To check for linting errors.
-- `npm run format`: To format the code with Prettier.
+### Prerequisites
+- Node.js 16+
+- npm or yarn
+- n8n development environment
+
+### Commands
+```bash
+# Install dependencies
+npm install
+
+# Build the node
+npm run build
+
+# Watch for changes (development)
+npm run dev
+
+# Check for linting errors
+npm run lint
+
+# Fix linting errors
+npm run lint:fix
+
+# Format code
+npm run format
+```
+
+### Project Structure
+```
+├── credentials/          # Authentication credentials
+├── nodes/               # Node implementations
+│   └── MauticAdvanced/  # Main node files
+├── dist/                # Compiled output
+├── package.json         # Project configuration
+└── README.md           # This file
+```
+
+## Troubleshooting
+
+### Common Issues
+
+#### "Could not get parameter 'options'" Error
+**Cause**: Missing Options parameter in node definition
+**Solution**: Update to latest version (0.3.2+) which includes all required Options parameters
+
+#### Authentication Errors
+**Cause**: Incorrect credentials or URL
+**Solution**: 
+- Verify Mautic URL format (https://your-mautic.com)
+- Check API credentials are active
+- Ensure proper permissions for API access
+
+#### Date Filter Issues
+**Cause**: Incorrect date format
+**Solution**: Use YYYY-MM-DD format for date filters
+
+#### Pagination Problems
+**Cause**: Large datasets causing timeouts
+**Solution**: Use "Return All" option or set appropriate limits
+
+### Getting Help
+1. Check the [Changelog](CHANGELOG.md) for recent fixes
+2. Search existing [Issues](https://github.com/msoukhomlinov/n8n-nodes-mautic-advanced/issues)
+3. Create a new issue with detailed information
+
+## Changelog
+
+See [CHANGELOG.md](CHANGELOG.md) for a complete list of changes and version history.
+
+### Recent Highlights
+- **v0.3.2**: Fixed Contact Operations Options Error
+- **v0.3.1**: Date filter formatting improvements
+- **v0.3.0**: Advanced filtering, DNC filtering, field selection
+- **v0.2.5**: Segment support and data extraction fixes
 
 ## Support
 
@@ -100,4 +328,10 @@ Your support helps maintain this project and develop new features.
 
 ## License
 
-MIT License
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## Credits
+
+- Built with [n8n](https://n8n.io/) workflow automation platform
+- Uses [change-case](https://github.com/blakeembrey/change-case) for string manipulation
+- Icons and design inspired by n8n community standards
