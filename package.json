@@ -1,6 +1,6 @@
 {
   "name": "n8n-nodes-mautic-advanced",
-  "version": "0.3.2",
+  "version": "0.3.3",
   "description": "Enhanced n8n node for Mautic with comprehensive API coverage including tags, campaigns, categories, and advanced contact management",
   "keywords": [
     "n8n",
