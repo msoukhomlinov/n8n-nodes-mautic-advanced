@@ -1,5 +1,8 @@
 # Changelog
 
+## [0.3.3] - 2025-07-25
+### Fixed
+- Fixed issue with icon not showing up due to case sensitivity
 
 ## [0.3.2] - 2025-07-24
 ### Fixed
