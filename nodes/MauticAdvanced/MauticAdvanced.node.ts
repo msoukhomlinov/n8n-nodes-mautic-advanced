@@ -407,9 +407,7 @@ export class MauticAdvanced implements INodeType {
         returnData.push(...result);
       } catch (error) {
         if (this.continueOnFail()) {
-          returnData.push(
-            ...this.helpers.returnJsonArray({ error: (error as Error).message }),
-          );
+          returnData.push(...this.helpers.returnJsonArray({ error: (error as Error).message }));
           continue;
         }
         throw error;
