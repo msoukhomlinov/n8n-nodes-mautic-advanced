@@ -220,7 +220,7 @@ async function editDoNotContactList(context: IExecuteFunctions, itemIndex: numbe
   const response = await makeApiRequest(
     context,
     'POST',
-    `/contacts/${contactId}/dnc/${action}/${channel}`,
+    `/contacts/${contactId}/dnc/${channel}/${action}`,
     body,
   );
   return response.contact;

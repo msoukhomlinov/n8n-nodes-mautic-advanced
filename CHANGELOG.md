@@ -1,9 +1,12 @@
 # Changelog
 
+## [0.3.5] - 2025-09-12
+### Fixes
+- Fixed incorrect API endpoint URL structure in 'Edit Do Not Contact List' operation causing "Contact not found" errors.
+
 ## [0.3.4] - 2025-09-12
 ### Fixed
 - Various bug fixes
-
 
 ## [0.3.3] - 2025-07-25
 ### Fixed
