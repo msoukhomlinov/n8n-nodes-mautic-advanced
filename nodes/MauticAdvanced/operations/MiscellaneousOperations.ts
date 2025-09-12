@@ -1,6 +1,12 @@
 import type { IExecuteFunctions, IDataObject, INodeExecutionData } from 'n8n-workflow';
 import { NodeOperationError } from 'n8n-workflow';
-import { makeApiRequest, makePaginatedRequest, getOptionalParam, getRequiredParam, handleApiError } from '../utils/ApiHelpers';
+import {
+  makeApiRequest,
+  makePaginatedRequest,
+  getOptionalParam,
+  getRequiredParam,
+  handleApiError,
+} from '../utils/ApiHelpers';
 import { buildQueryFromOptions, wrapSingleItem } from '../utils/DataHelpers';
 
 // Public execute entry points
@@ -292,10 +298,17 @@ async function addContactToSegment(context: IExecuteFunctions, itemIndex: number
   return await makeApiRequest(context, 'POST', `/segments/${segmentId}/contact/${contactId}/add`);
 }
 
-async function removeContactFromSegment(context: IExecuteFunctions, itemIndex: number): Promise<any> {
+async function removeContactFromSegment(
+  context: IExecuteFunctions,
+  itemIndex: number,
+): Promise<any> {
   const contactId = getRequiredParam<string>(context, 'contactId', itemIndex);
   const segmentId = getRequiredParam<string>(context, 'segmentId', itemIndex);
-  return await makeApiRequest(context, 'POST', `/segments/${segmentId}/contact/${contactId}/remove`);
+  return await makeApiRequest(
+    context,
+    'POST',
+    `/segments/${segmentId}/contact/${contactId}/remove`,
+  );
 }
 
 // Campaign-Contact relationships
@@ -305,22 +318,41 @@ async function addContactToCampaign(context: IExecuteFunctions, itemIndex: numbe
   return await makeApiRequest(context, 'POST', `/campaigns/${campaignId}/contact/${contactId}/add`);
 }
 
-async function removeContactFromCampaign(context: IExecuteFunctions, itemIndex: number): Promise<any> {
+async function removeContactFromCampaign(
+  context: IExecuteFunctions,
+  itemIndex: number,
+): Promise<any> {
   const contactId = getRequiredParam<string>(context, 'contactId', itemIndex);
   const campaignId = getRequiredParam<string>(context, 'campaignId', itemIndex);
-  return await makeApiRequest(context, 'POST', `/campaigns/${campaignId}/contact/${contactId}/remove`);
+  return await makeApiRequest(
+    context,
+    'POST',
+    `/campaigns/${campaignId}/contact/${contactId}/remove`,
+  );
 }
 
 // Company-Contact relationships
 async function addContactToCompany(context: IExecuteFunctions, itemIndex: number): Promise<any> {
   const contactId = getRequiredParam<string>(context, 'contactId', itemIndex);
   const companyId = getRequiredParam<string>(context, 'companyId', itemIndex);
-  return await makeApiRequest(context, 'POST', `/companies/${companyId}/contact/${contactId}/add`, {});
+  return await makeApiRequest(
+    context,
+    'POST',
+    `/companies/${companyId}/contact/${contactId}/add`,
+    {},
+  );
 }
 
-async function removeContactFromCompany(context: IExecuteFunctions, itemIndex: number): Promise<any> {
+async function removeContactFromCompany(
+  context: IExecuteFunctions,
+  itemIndex: number,
+): Promise<any> {
   const contactId = getRequiredParam<string>(context, 'contactId', itemIndex);
   const companyId = getRequiredParam<string>(context, 'companyId', itemIndex);
-  return await makeApiRequest(context, 'POST', `/companies/${companyId}/contact/${contactId}/remove`, {});
+  return await makeApiRequest(
+    context,
+    'POST',
+    `/companies/${companyId}/contact/${contactId}/remove`,
+    {},
+  );
 }
-

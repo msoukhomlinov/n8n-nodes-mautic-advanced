@@ -1,4 +1,3 @@
-// @ts-nocheck
 import type { IExecuteFunctions, INodeExecutionData } from 'n8n-workflow';
 import { NodeOperationError } from 'n8n-workflow';
 import { snakeCase } from 'change-case';
@@ -94,7 +93,7 @@ async function createContact(context: IExecuteFunctions, itemIndex: number): Pro
   } else {
     body = validateJsonParameter(context, 'bodyJson', itemIndex);
   }
-  addContactFields(body, additionalFields, context, itemIndex);
+  addContactFields(body, additionalFields);
   const response = await makeApiRequest(context, 'POST', '/contacts/new', body);
   const contactData = [response.contact];
   return processContactFields(contactData, options);
@@ -102,7 +101,9 @@ async function createContact(context: IExecuteFunctions, itemIndex: number): Pro
 
 async function updateContact(context: IExecuteFunctions, itemIndex: number): Promise<any> {
   const options = getOptionalParam(context, 'options', itemIndex, {});
-  const updateFields = getOptionalParam(context, 'updateFields', itemIndex, {});
+  const updateFields = getOptionalParam(context, 'updateFields', itemIndex, {}) as {
+    [key: string]: any;
+  };
   const contactId = getRequiredParam(context, 'contactId', itemIndex);
   let body: any = {};
   if (updateFields.email) body.email = updateFields.email;
@@ -114,7 +115,7 @@ async function updateContact(context: IExecuteFunctions, itemIndex: number): Pro
   if ((updateFields as any).bodyJson) {
     body = validateJsonParameter(context, 'updateFields.bodyJson', itemIndex);
   }
-  addContactFields(body, updateFields, context, itemIndex);
+  addContactFields(body, updateFields);
   const response = await makeApiRequest(context, 'PATCH', `/contacts/${contactId}/edit`, body);
   const contactData = [response.contact];
   return processContactFields(contactData, options);
@@ -125,7 +126,7 @@ async function getContact(context: IExecuteFunctions, itemIndex: number): Promis
   const contactId = getRequiredParam(context, 'contactId', itemIndex);
   const response = await makeApiRequest(context, 'GET', `/contacts/${contactId}`);
   const contactData = [response.contact];
-  return processContactFields(contactData, options, options.fieldsToReturn);
+  return processContactFields(contactData, options, (options as any).fieldsToReturn);
 }
 
 async function getAllContacts(context: IExecuteFunctions, itemIndex: number): Promise<any> {
@@ -140,7 +141,7 @@ async function getAllContacts(context: IExecuteFunctions, itemIndex: number): Pr
   const whereObj = (options as any).where;
   if (whereObj && Array.isArray(whereObj.conditions)) {
     const filteredWhere = whereObj.conditions.filter(
-      (condition: any) => condition.col && (condition.val !== undefined && condition.val !== ''),
+      (condition: any) => condition.col && condition.val !== undefined && condition.val !== '',
     );
     if (filteredWhere.length > 0) {
       qs.where = filteredWhere;
@@ -152,7 +153,12 @@ async function getAllContacts(context: IExecuteFunctions, itemIndex: number): Pr
   const anyDncOnly = (options as any).anyDncOnly === true;
   const useDncPostFilter = emailDncOnly || smsDncOnly || anyDncOnly;
   if (useDncPostFilter) {
-    responseData = await getContactsWithDncFilter(context, qs, options, returnAll ? undefined : (options as any).limit);
+    responseData = await getContactsWithDncFilter(
+      context,
+      qs,
+      options,
+      returnAll ? undefined : (options as any).limit,
+    );
   } else {
     if (returnAll) {
       responseData = await makePaginatedRequest(context, 'contacts', 'GET', '/contacts', {}, qs);
@@ -169,6 +175,7 @@ async function deleteContact(context: IExecuteFunctions, itemIndex: number): Pro
   const options = getOptionalParam(context, 'options', itemIndex, {});
   const contactId = getRequiredParam(context, 'contactId', itemIndex);
   try {
+    let responseData: any[];
     const response = await makeApiRequest(context, 'DELETE', `/contacts/${contactId}/delete`);
     if (response && response.contact !== undefined) {
       responseData = [response.contact];
@@ -184,7 +191,11 @@ async function deleteContact(context: IExecuteFunctions, itemIndex: number): Pro
 async function sendEmailToContact(context: IExecuteFunctions, itemIndex: number): Promise<any> {
   const contactId = getRequiredParam(context, 'contactId', itemIndex);
   const emailId = getRequiredParam(context, 'emailId', itemIndex);
-  const response = await makeApiRequest(context, 'POST', `/emails/${emailId}/contact/${contactId}/send`);
+  const response = await makeApiRequest(
+    context,
+    'POST',
+    `/emails/${emailId}/contact/${contactId}/send`,
+  );
   return response;
 }
 
@@ -192,7 +203,12 @@ async function editContactPoints(context: IExecuteFunctions, itemIndex: number):
   const contactId = getRequiredParam(context, 'contactId', itemIndex);
   const value = getRequiredParam(context, 'value', itemIndex);
   const body: any = { value };
-  const response = await makeApiRequest(context, 'POST', `/contacts/${contactId}/points/edit`, body);
+  const response = await makeApiRequest(
+    context,
+    'POST',
+    `/contacts/${contactId}/points/edit`,
+    body,
+  );
   return response.contact;
 }
 
@@ -201,7 +217,12 @@ async function editDoNotContactList(context: IExecuteFunctions, itemIndex: numbe
   const action = getRequiredParam(context, 'action', itemIndex);
   const channel = getRequiredParam(context, 'channel', itemIndex);
   const body: any = { action, channel };
-  const response = await makeApiRequest(context, 'POST', `/contacts/${contactId}/dnc/${action}/${channel}`);
+  const response = await makeApiRequest(
+    context,
+    'POST',
+    `/contacts/${contactId}/dnc/${action}/${channel}`,
+    body,
+  );
   return response.contact;
 }
 
@@ -227,7 +248,11 @@ async function addUtmTags(context: IExecuteFunctions, itemIndex: number): Promis
 async function removeUtmTags(context: IExecuteFunctions, itemIndex: number): Promise<any> {
   const contactId = getRequiredParam(context, 'contactId', itemIndex);
   const utmId = getRequiredParam(context, 'utmId', itemIndex);
-  const response = await makeApiRequest(context, 'POST', `/contacts/${contactId}/utm/${utmId}/remove`);
+  const response = await makeApiRequest(
+    context,
+    'POST',
+    `/contacts/${contactId}/utm/${utmId}/remove`,
+  );
   return response.contact;
 }
 
@@ -241,30 +266,52 @@ async function getContactActivity(context: IExecuteFunctions, itemIndex: number)
   const options = getOptionalParam(context, 'options', itemIndex, {});
   const qs: any = {};
   const filters: any = {};
-  if (options.search) filters.search = options.search;
-  if ((options as any).includeEvents) filters.includeEvents = (options as any).includeEvents.split(',');
-  if ((options as any).excludeEvents) filters.excludeEvents = (options as any).excludeEvents.split(',');
+  if ((options as any).search) filters.search = (options as any).search;
+  if ((options as any).includeEvents)
+    filters.includeEvents = (options as any).includeEvents.split(',');
+  if ((options as any).excludeEvents)
+    filters.excludeEvents = (options as any).excludeEvents.split(',');
   if ((options as any).dateFrom) filters.dateFrom = (options as any).dateFrom;
   if ((options as any).dateTo) filters.dateTo = (options as any).dateTo;
   qs['filters'] = filters;
-  if ((options as any).orderBy) qs.order = [(options as any).orderBy, (options as any).orderByDir ?? 'asc'];
+  if ((options as any).orderBy)
+    qs.order = [(options as any).orderBy, (options as any).orderByDir ?? 'asc'];
   if ((options as any).limit) qs.limit = (options as any).limit;
-  return await makePaginatedRequest(context, 'events', 'GET', `/contacts/${contactId}/activity`, {}, qs);
+  return await makePaginatedRequest(
+    context,
+    'events',
+    'GET',
+    `/contacts/${contactId}/activity`,
+    {},
+    qs,
+  );
 }
 
 async function getContactNotes(context: IExecuteFunctions, itemIndex: number): Promise<any> {
   const contactId = getRequiredParam(context, 'contactId', itemIndex);
   const options = getOptionalParam(context, 'options', itemIndex, {});
   const qs: any = options;
-  return await makePaginatedRequest(context, 'notes', 'GET', `/contacts/${contactId}/notes`, {}, qs);
+  return await makePaginatedRequest(
+    context,
+    'notes',
+    'GET',
+    `/contacts/${contactId}/notes`,
+    {},
+    qs,
+  );
 }
 
 async function getContactCompanies(context: IExecuteFunctions, itemIndex: number): Promise<any> {
   const contactId = getRequiredParam(context, 'contactId', itemIndex);
-  return await makePaginatedRequest(context, 'companies', 'GET', `/contacts/${contactId}/companies`);
+  return await makePaginatedRequest(
+    context,
+    'companies',
+    'GET',
+    `/contacts/${contactId}/companies`,
+  );
 }
 
-function addContactFields(body: any, fields: any, context: IExecuteFunctions, itemIndex: number) {
+function addContactFields(body: any, fields: any) {
   const addressUi = fields.addressUi as any;
   if (addressUi?.addressValues) {
     const { addressValues } = addressUi;
@@ -279,7 +326,8 @@ function addContactFields(body: any, fields: any, context: IExecuteFunctions, it
   if (socialMediaUi?.socialMediaValues) {
     const { socialMediaValues } = socialMediaUi;
     const data = socialMediaValues.reduce(
-      (obj: any, value: any) => Object.assign(obj, { [`social_${value.socialMediaField}`]: value.value }),
+      (obj: any, value: any) =>
+        Object.assign(obj, { [`social_${value.socialMediaField}`]: value.value }),
       {},
     );
     Object.assign(body, data);
@@ -314,9 +362,9 @@ async function getContactsWithDncFilter(
   const smsDncOnly = options.smsDncOnly === true;
   const anyDncOnly = options.anyDncOnly === true;
   const start = qs.start || 0;
-  limit = limit || qs.limit || 30;
+  const finalLimit = limit || qs.limit || 30;
   const contacts: any[] = [];
-  let remaining = limit;
+  let remaining = finalLimit;
   let currentStart = start;
   while (remaining > 0) {
     const pageLimit = Math.min(remaining, 30);
@@ -339,4 +387,3 @@ async function getContactsWithDncFilter(
   }
   return contacts;
 }
-
