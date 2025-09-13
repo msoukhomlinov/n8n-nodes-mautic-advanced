@@ -311,6 +311,56 @@ async function getContactCompanies(context: IExecuteFunctions, itemIndex: number
   );
 }
 
+function normalizeTagsInput(tagsInput: any): string[] {
+  // Handle different input formats for tags
+
+  // If it's already an array of strings, return as is
+  if (Array.isArray(tagsInput) && tagsInput.every((tag) => typeof tag === 'string')) {
+    return tagsInput;
+  }
+
+  // If it's a string, split by comma
+  if (typeof tagsInput === 'string') {
+    return tagsInput
+      .split(',')
+      .map((tag) => tag.trim())
+      .filter((tag) => tag.length > 0);
+  }
+
+  // If it's an array of objects with 'tag' property
+  if (Array.isArray(tagsInput) && tagsInput.every((item) => typeof item === 'object' && item.tag)) {
+    return tagsInput.map((item) => item.tag);
+  }
+
+  // If it's a complex object (like user's input with inputA/inputB)
+  if (typeof tagsInput === 'object' && tagsInput !== null) {
+    const tags: string[] = [];
+
+    // Handle inputA and inputB structure
+    if (tagsInput.inputA && Array.isArray(tagsInput.inputA)) {
+      tags.push(...tagsInput.inputA.map((item: any) => item.tag || item).filter(Boolean));
+    }
+    if (tagsInput.inputB && Array.isArray(tagsInput.inputB)) {
+      tags.push(...tagsInput.inputB.map((item: any) => item.tag || item).filter(Boolean));
+    }
+
+    // If no inputA/inputB, try to extract from any array properties
+    if (tags.length === 0) {
+      Object.values(tagsInput).forEach((value: any) => {
+        if (Array.isArray(value)) {
+          tags.push(...value.map((item: any) => item.tag || item).filter(Boolean));
+        }
+      });
+    }
+
+    // Remove duplicates and return
+    return [...new Set(tags)];
+  }
+
+  // Fallback: return empty array
+  return [];
+}
+
 function addContactFields(body: any, fields: any) {
   const addressUi = fields.addressUi as any;
   if (addressUi?.addressValues) {
@@ -340,7 +390,7 @@ function addContactFields(body: any, fields: any) {
   if (fields.perspective) body.perspective = fields.perspective;
   if (fields.points) body.points = fields.points;
   if (fields.preferredChannel) body.preferred_channel = fields.preferredChannel;
-  if (fields.tags) body.tags = (fields.tags as string).split(',');
+  if (fields.tags) body.tags = normalizeTagsInput(fields.tags);
   const customFieldsUi = fields.customFieldsUi as any;
   if (customFieldsUi?.customFieldValues) {
     const { customFieldValues } = customFieldsUi;

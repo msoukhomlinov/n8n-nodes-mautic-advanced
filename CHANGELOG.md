@@ -1,5 +1,9 @@
 # Changelog
 
+## [0.3.6] - 2025-09-13
+### Fixes
+- Fixed "fields.tags.split is not a function" error in Contact operations by adding support for array and object tag inputs 
+
 ## [0.3.5] - 2025-09-12
 ### Fixes
 - Fixed incorrect API endpoint URL structure in 'Edit Do Not Contact List' operation causing "Contact not found" errors.
