@@ -1,8 +1,11 @@
-import { NodeApiError, NodeOperationError, type INodeExecutionData, type IHttpRequestMethods, type JsonObject } from 'n8n-workflow';
 import {
-  mauticApiRequest,
-  mauticApiRequestAllItems,
-} from '../GenericFunctions';
+  NodeApiError,
+  NodeOperationError,
+  type INodeExecutionData,
+  type IHttpRequestMethods,
+  type JsonObject,
+} from 'n8n-workflow';
+import { mauticApiRequest, mauticApiRequestAllItems } from '../GenericFunctions';
 import type { IExecuteFunctions, IDataObject } from 'n8n-workflow';
 
 // Standardized API request wrapper with error handling
@@ -98,7 +101,11 @@ export function getRequiredParam<T = any>(
   errorMessage?: string,
 ): T {
   const value = context.getNodeParameter(paramName, itemIndex) as T;
-  if ((value as unknown) === undefined || (value as unknown) === null || (value as unknown) === '') {
+  if (
+    (value as unknown) === undefined ||
+    (value as unknown) === null ||
+    (value as unknown) === ''
+  ) {
     throw new NodeOperationError(
       context.getNode(),
       errorMessage || `Parameter '${paramName}' is required.`,

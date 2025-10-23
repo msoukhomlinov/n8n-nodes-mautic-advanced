@@ -31,12 +31,6 @@ export const contactOperations: INodeProperties[] = [
         action: 'Delete a contact',
       },
       {
-        name: 'Delete Batch',
-        value: 'deleteBatch',
-        description: 'Delete multiple contacts in one operation',
-        action: 'Delete multiple contacts',
-      },
-      {
         name: 'Edit Contact Points',
         value: 'editContactPoint',
         description: "Edit contact's points",
@@ -97,10 +91,52 @@ export const contactOperations: INodeProperties[] = [
         action: "Get a contact's companies",
       },
       {
+        name: 'Get Campaigns',
+        value: 'getCampaigns',
+        description: "Get a contact's campaigns",
+        action: "Get a contact's campaigns",
+      },
+      {
         name: 'Get Devices',
         value: 'getDevices',
         description: "Get a contact's devices",
         action: "Get a contact's devices",
+      },
+      {
+        name: 'Get Segments',
+        value: 'getSegments',
+        description: "Get a contact's segments",
+        action: "Get a contact's segments",
+      },
+      {
+        name: 'Add to Segments',
+        value: 'addToSegments',
+        description: 'Add contact to segments',
+        action: 'Add contact to segments',
+      },
+      {
+        name: 'Remove from Segments',
+        value: 'removeFromSegments',
+        description: 'Remove contact from segments',
+        action: 'Remove contact from segments',
+      },
+      {
+        name: 'Add to Campaigns',
+        value: 'addToCampaigns',
+        description: 'Add contact to campaigns',
+        action: 'Add contact to campaigns',
+      },
+      {
+        name: 'Remove from Campaigns',
+        value: 'removeFromCampaigns',
+        description: 'Remove contact from campaigns',
+        action: 'Remove contact from campaigns',
+      },
+      {
+        name: 'Get All Activity',
+        value: 'getAllActivity',
+        description: 'Get activity events for all contacts',
+        action: 'Get activity events for all contacts',
       },
     ],
     default: 'create',
@@ -190,12 +226,9 @@ export const contactFields: INodeProperties[] = [
   {
     displayName: 'Primary Company Name or ID',
     name: 'company',
-    type: 'options',
+    type: 'string',
     description:
-      'Choose from the list, or specify an ID using an <a href="https://docs.n8n.io/code/expressions/">expression</a>',
-    typeOptions: {
-      loadOptionsMethod: 'getCompanies',
-    },
+      'Enter the company name or ID. You can use an <a href="https://docs.n8n.io/code/expressions/">expression</a> to get the company ID from a previous Company > Get All operation.',
     displayOptions: {
       show: {
         resource: ['contact'],
@@ -521,6 +554,23 @@ export const contactFields: INodeProperties[] = [
         default: '',
       },
     ],
+  },
+
+  /* -------------------------------------------------------------------------- */
+  /*                                contact:delete                              */
+  /* -------------------------------------------------------------------------- */
+  {
+    displayName: 'Contact ID',
+    name: 'contactId',
+    type: 'string',
+    required: true,
+    displayOptions: {
+      show: {
+        resource: ['contact'],
+        operation: ['delete'],
+      },
+    },
+    default: '',
   },
 
   /* -------------------------------------------------------------------------- */
@@ -989,12 +1039,9 @@ export const contactFields: INodeProperties[] = [
       {
         displayName: 'Primary Company Name or ID',
         name: 'company',
-        type: 'options',
+        type: 'string',
         description:
-          'Choose from the list, or specify an ID using an <a href="https://docs.n8n.io/code/expressions/">expression</a>',
-        typeOptions: {
-          loadOptionsMethod: 'getCompanies',
-        },
+          'Enter the company name or ID. You can use an <a href="https://docs.n8n.io/code/expressions/">expression</a> to get the company ID from a previous Company > Get All operation.',
         displayOptions: {
           show: {
             '/jsonParameters': [false],
@@ -1887,6 +1934,23 @@ export const contactFields: INodeProperties[] = [
   },
 
   /* -------------------------------------------------------------------------- */
+  /*                             contact:getCampaigns                           */
+  /* -------------------------------------------------------------------------- */
+  {
+    displayName: 'Contact ID',
+    name: 'contactId',
+    type: 'string',
+    required: true,
+    displayOptions: {
+      show: {
+        resource: ['contact'],
+        operation: ['getCampaigns'],
+      },
+    },
+    default: '',
+  },
+
+  /* -------------------------------------------------------------------------- */
   /*                             contact:getDevices                             */
   /* -------------------------------------------------------------------------- */
   {
@@ -1901,5 +1965,248 @@ export const contactFields: INodeProperties[] = [
       },
     },
     default: '',
+  },
+
+  /* -------------------------------------------------------------------------- */
+  /*                             contact:getSegments                             */
+  /* -------------------------------------------------------------------------- */
+  {
+    displayName: 'Contact ID',
+    name: 'contactId',
+    type: 'string',
+    required: true,
+    displayOptions: {
+      show: {
+        resource: ['contact'],
+        operation: ['getSegments'],
+      },
+    },
+    default: '',
+  },
+
+  /* -------------------------------------------------------------------------- */
+  /*                             contact:addToSegments                           */
+  /* -------------------------------------------------------------------------- */
+  {
+    displayName: 'Contact ID',
+    name: 'contactId',
+    type: 'string',
+    required: true,
+    displayOptions: {
+      show: {
+        resource: ['contact'],
+        operation: ['addToSegments'],
+      },
+    },
+    default: '',
+  },
+  {
+    displayName: 'Segment IDs',
+    name: 'segmentIds',
+    type: 'multiOptions',
+    required: true,
+    description:
+      'Choose from the list, or specify IDs using an <a href="https://docs.n8n.io/code/expressions/">expression</a>',
+    typeOptions: {
+      loadOptionsMethod: 'getSegments',
+    },
+    displayOptions: {
+      show: {
+        resource: ['contact'],
+        operation: ['addToSegments'],
+      },
+    },
+    default: [],
+  },
+
+  /* -------------------------------------------------------------------------- */
+  /*                             contact:removeFromSegments                     */
+  /* -------------------------------------------------------------------------- */
+  {
+    displayName: 'Contact ID',
+    name: 'contactId',
+    type: 'string',
+    required: true,
+    displayOptions: {
+      show: {
+        resource: ['contact'],
+        operation: ['removeFromSegments'],
+      },
+    },
+    default: '',
+  },
+  {
+    displayName: 'Segment IDs',
+    name: 'segmentIds',
+    type: 'multiOptions',
+    required: true,
+    description:
+      'Choose from the list, or specify IDs using an <a href="https://docs.n8n.io/code/expressions/">expression</a>',
+    typeOptions: {
+      loadOptionsMethod: 'getSegments',
+    },
+    displayOptions: {
+      show: {
+        resource: ['contact'],
+        operation: ['removeFromSegments'],
+      },
+    },
+    default: [],
+  },
+
+  /* -------------------------------------------------------------------------- */
+  /*                             contact:addToCampaigns                          */
+  /* -------------------------------------------------------------------------- */
+  {
+    displayName: 'Contact ID',
+    name: 'contactId',
+    type: 'string',
+    required: true,
+    displayOptions: {
+      show: {
+        resource: ['contact'],
+        operation: ['addToCampaigns'],
+      },
+    },
+    default: '',
+  },
+  {
+    displayName: 'Campaign IDs',
+    name: 'campaignIds',
+    type: 'multiOptions',
+    required: true,
+    description:
+      'Choose from the list, or specify IDs using an <a href="https://docs.n8n.io/code/expressions/">expression</a>',
+    typeOptions: {
+      loadOptionsMethod: 'getCampaigns',
+    },
+    displayOptions: {
+      show: {
+        resource: ['contact'],
+        operation: ['addToCampaigns'],
+      },
+    },
+    default: [],
+  },
+
+  /* -------------------------------------------------------------------------- */
+  /*                             contact:removeFromCampaigns                    */
+  /* -------------------------------------------------------------------------- */
+  {
+    displayName: 'Contact ID',
+    name: 'contactId',
+    type: 'string',
+    required: true,
+    displayOptions: {
+      show: {
+        resource: ['contact'],
+        operation: ['removeFromCampaigns'],
+      },
+    },
+    default: '',
+  },
+  {
+    displayName: 'Campaign IDs',
+    name: 'campaignIds',
+    type: 'multiOptions',
+    required: true,
+    description:
+      'Choose from the list, or specify IDs using an <a href="https://docs.n8n.io/code/expressions/">expression</a>',
+    typeOptions: {
+      loadOptionsMethod: 'getCampaigns',
+    },
+    displayOptions: {
+      show: {
+        resource: ['contact'],
+        operation: ['removeFromCampaigns'],
+      },
+    },
+    default: [],
+  },
+
+  /* -------------------------------------------------------------------------- */
+  /*                             contact:getAllActivity                         */
+  /* -------------------------------------------------------------------------- */
+  {
+    displayName: 'Options',
+    name: 'options',
+    type: 'collection',
+    placeholder: 'Add Option',
+    default: {},
+    displayOptions: {
+      show: {
+        resource: ['contact'],
+        operation: ['getAllActivity'],
+      },
+    },
+    options: [
+      {
+        displayName: 'Search',
+        name: 'search',
+        type: 'string',
+        default: '',
+        description: 'String or search command to filter events by',
+      },
+      {
+        displayName: 'Include Events',
+        name: 'includeEvents',
+        type: 'string',
+        default: '',
+        description: 'Array of event types to include, separated by comma',
+      },
+      {
+        displayName: 'Exclude Events',
+        name: 'excludeEvents',
+        type: 'string',
+        default: '',
+        description: 'Array of event types to exclude, separated by comma',
+      },
+      {
+        displayName: 'Date From',
+        name: 'dateFrom',
+        type: 'dateTime',
+        default: '',
+      },
+      {
+        displayName: 'Date To',
+        name: 'dateTo',
+        type: 'dateTime',
+        default: '',
+      },
+      {
+        displayName: 'Limit',
+        name: 'limit',
+        type: 'number',
+        typeOptions: {
+          minValue: 1,
+        },
+        default: 50,
+        description: 'Max number of results to return',
+      },
+      {
+        displayName: 'Order By',
+        name: 'orderBy',
+        type: 'string',
+        default: '',
+        description: 'Column to sort by',
+      },
+      {
+        displayName: 'Order By Direction',
+        name: 'orderByDir',
+        type: 'options',
+        options: [
+          {
+            name: 'ASC',
+            value: 'asc',
+          },
+          {
+            name: 'DESC',
+            value: 'desc',
+          },
+        ],
+        default: 'asc',
+        description: 'Sort direction',
+      },
+    ],
   },
 ];

@@ -2,7 +2,7 @@
 
 [![Buy Me A Coffee](https://img.shields.io/badge/Buy%20Me%20A%20Coffee-Support-yellow.svg)](https://buymeacoffee.com/msoukhomlinov)
 
-Enhanced n8n node for Mautic with comprehensive API coverage including tags, campaigns, categories, and advanced contact management.
+Enhanced n8n node for Mautic with comprehensive API coverage including tags, campaigns, categories, notifications, and advanced contact management.
 
 ## 📋 Table of Contents
 
@@ -26,6 +26,7 @@ This enhanced version extends the standard n8n Mautic node with:
 - **🏷️ Complete Tag Management**: Full CRUD operations for tags (missing in the standard node)
 - **📊 Campaign Operations**: Create, clone, update, and manage campaigns
 - **📁 Category Management**: Handle categories with bundle and color support
+- **🔔 Notification Management**: Full CRUD operations for notifications with scheduling and language support
 - **🔗 Advanced Relationship Management**: Sophisticated contact-to-campaign and contact-to-company associations
 - **📧 Enhanced Email Operations**: Segment-based email sending capabilities
 - **👥 Extended Contact Operations**: UTM tag management, activity tracking, device information, and notes
@@ -101,6 +102,13 @@ This enhanced version extends the standard n8n Mautic node with:
 - **Get Many** categories
 - **Update** category details
 - **Delete** a category
+
+### 🔔 Notifications
+- **Create** a new notification with scheduling and language support
+- **Get** a notification by ID
+- **Get Many** notifications with filtering
+- **Update** notification details
+- **Delete** a notification
 
 ### 📋 Segments
 - **Create** a new segment
@@ -307,16 +315,6 @@ npm run format
 1. Check the [Changelog](CHANGELOG.md) for recent fixes
 2. Search existing [Issues](https://github.com/msoukhomlinov/n8n-nodes-mautic-advanced/issues)
 3. Create a new issue with detailed information
-
-## Changelog
-
-See [CHANGELOG.md](CHANGELOG.md) for a complete list of changes and version history.
-
-### Recent Highlights
-- **v0.3.2**: Fixed Contact Operations Options Error
-- **v0.3.1**: Date filter formatting improvements
-- **v0.3.0**: Advanced filtering, DNC filtering, field selection
-- **v0.2.5**: Segment support and data extraction fixes
 
 ## Support
 

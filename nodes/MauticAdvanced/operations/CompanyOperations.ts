@@ -50,7 +50,12 @@ async function createCompany(context: IExecuteFunctions, itemIndex: number): Pro
   const name = getRequiredParam<string>(context, 'name', itemIndex);
   const body: IDataObject = { companyname: name };
 
-  const additionalFields = getOptionalParam<IDataObject>(context, 'additionalFields', itemIndex, {});
+  const additionalFields = getOptionalParam<IDataObject>(
+    context,
+    'additionalFields',
+    itemIndex,
+    {},
+  );
   const {
     addressUi,
     customFieldsUi,
@@ -85,7 +90,9 @@ async function createCompany(context: IExecuteFunctions, itemIndex: number): Pro
   if (description) body.companydescription = description as string;
 
   if ((customFieldsUi as any)?.customFieldValues) {
-    const { customFieldValues } = customFieldsUi as { customFieldValues: Array<{ fieldId: string; fieldValue: string }>; };
+    const { customFieldValues } = customFieldsUi as {
+      customFieldValues: Array<{ fieldId: string; fieldValue: string }>;
+    };
     const data = customFieldValues.reduce(
       (obj, value) => Object.assign(obj, { [`${value.fieldId}`]: value.fieldValue }),
       {} as IDataObject,
@@ -145,7 +152,9 @@ async function updateCompany(context: IExecuteFunctions, itemIndex: number): Pro
   if (description) body.companydescription = description as string;
 
   if ((customFieldsUi as any)?.customFieldValues) {
-    const { customFieldValues } = customFieldsUi as { customFieldValues: Array<{ fieldId: string; fieldValue: string }>; };
+    const { customFieldValues } = customFieldsUi as {
+      customFieldValues: Array<{ fieldId: string; fieldValue: string }>;
+    };
     const data = customFieldValues.reduce(
       (obj, value) => Object.assign(obj, { [`${value.fieldId}`]: value.fieldValue }),
       {} as IDataObject,
@@ -177,7 +186,12 @@ async function getCompany(context: IExecuteFunctions, itemIndex: number): Promis
 async function getAllCompanies(context: IExecuteFunctions, itemIndex: number): Promise<any> {
   const returnAll = getOptionalParam<boolean>(context, 'returnAll', itemIndex, false);
   const simple = getOptionalParam<boolean>(context, 'simple', itemIndex, false);
-  const additionalFields = getOptionalParam<IDataObject>(context, 'additionalFields', itemIndex, {});
+  const additionalFields = getOptionalParam<IDataObject>(
+    context,
+    'additionalFields',
+    itemIndex,
+    {},
+  );
   const qs = buildQueryFromOptions(additionalFields);
   if (!qs.orderBy) qs.orderBy = 'id';
   if (!qs.orderByDir) qs.orderByDir = 'asc';
@@ -185,7 +199,15 @@ async function getAllCompanies(context: IExecuteFunctions, itemIndex: number): P
   let responseData: any[];
   if (returnAll) {
     const limit = getOptionalParam<number | undefined>(context, 'limit', itemIndex, undefined);
-    responseData = await makePaginatedRequest(context, 'companies', 'GET', '/companies', {}, qs, limit);
+    responseData = await makePaginatedRequest(
+      context,
+      'companies',
+      'GET',
+      '/companies',
+      {},
+      qs,
+      limit,
+    );
   } else {
     const limit = getRequiredParam<number>(context, 'limit', itemIndex);
     qs.limit = limit;
@@ -208,4 +230,3 @@ async function deleteCompany(context: IExecuteFunctions, itemIndex: number): Pro
   }
   return result;
 }
-

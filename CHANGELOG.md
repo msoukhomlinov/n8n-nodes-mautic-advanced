@@ -1,5 +1,25 @@
 # Changelog
 
+
+## [0.3.7] - 2025-10-23
+### Added
+- **Field Management**: Added comprehensive support for managing custom fields for both Contact and Company records with full CRUD operations, all Mautic field types, and proper pagination support.
+- **Notification Management**: Added full CRUD support for notifications with scheduling and language locale options.
+- **Contact Operations**: Added new Contact operations for segment and campaign management:
+  - Get Segments - Retrieve contact's segment memberships
+  - Add to Segments - Add contact to multiple segments
+  - Remove from Segments - Remove contact from multiple segments
+  - Get Campaigns - Retrieve contact's campaign memberships
+  - Add to Campaigns - Add contact to multiple campaigns
+  - Remove from Campaigns - Remove contact from multiple campaigns
+  - Get All Activity - Retrieve activity events across all contacts with filtering options
+
+### Fixed
+- **Contact Points**: Fixed `editContactPoint` operation to use correct Mautic API endpoints (`/points/plus` and `/points/minus`) and proper parameter handling
+- **Contact Operations**: Removed incomplete `deleteBatch` operation from UI to prevent user errors
+- **Performance**: Fixed slow loading of "Primary Company Name or ID" field by changing from dropdown to string input, eliminating unnecessary API calls when loading all companies
+
+
 ## [0.3.6] - 2025-09-13
 ### Fixes
 - Fixed "fields.tags.split is not a function" error in Contact operations by adding support for array and object tag inputs 

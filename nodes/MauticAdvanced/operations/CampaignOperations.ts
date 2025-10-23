@@ -53,7 +53,12 @@ export async function executeCampaignOperation(
 
 async function createCampaign(context: IExecuteFunctions, itemIndex: number): Promise<any> {
   const name = getRequiredParam<string>(context, 'name', itemIndex);
-  const additionalFields = getOptionalParam<IDataObject>(context, 'additionalFields', itemIndex, {});
+  const additionalFields = getOptionalParam<IDataObject>(
+    context,
+    'additionalFields',
+    itemIndex,
+    {},
+  );
   const body: IDataObject = { name, ...additionalFields };
   const response = await makeApiRequest(context, 'POST', '/campaigns/new', body);
   return response.campaign;
@@ -100,10 +105,23 @@ async function getCampaignContacts(context: IExecuteFunctions, itemIndex: number
   const options = getOptionalParam<IDataObject>(context, 'options', itemIndex, {});
   const qs = buildQueryFromOptions(options);
   if (returnAll) {
-    return await makePaginatedRequest(context, 'contacts', 'GET', `/campaigns/${campaignId}/contacts`, {}, qs);
+    return await makePaginatedRequest(
+      context,
+      'contacts',
+      'GET',
+      `/campaigns/${campaignId}/contacts`,
+      {},
+      qs,
+    );
   } else {
     qs.limit = getOptionalParam<number>(context, 'limit', itemIndex, 30);
-    const response = await makeApiRequest(context, 'GET', `/campaigns/${campaignId}/contacts`, {}, qs);
+    const response = await makeApiRequest(
+      context,
+      'GET',
+      `/campaigns/${campaignId}/contacts`,
+      {},
+      qs,
+    );
     return response.contacts;
   }
 }
@@ -113,4 +131,3 @@ async function deleteCampaign(context: IExecuteFunctions, itemIndex: number): Pr
   const response = await makeApiRequest(context, 'DELETE', `/campaigns/${campaignId}/delete`);
   return response.campaign;
 }
-

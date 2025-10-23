@@ -10,6 +10,8 @@ import { NodeOperationError } from 'n8n-workflow';
 import { executeContactOperation } from './operations/ContactOperations';
 import { executeCompanyOperation } from './operations/CompanyOperations';
 import { executeCampaignOperation } from './operations/CampaignOperations';
+import { executeFieldOperation } from './operations/FieldOperations';
+import { executeNotificationOperation } from './operations/NotificationOperations';
 import { executeSegmentOperation } from './operations/SegmentOperations';
 import {
   executeTagOperation,
@@ -27,7 +29,9 @@ import { companyContactFields, companyContactOperations } from './CompanyContact
 import { companyFields, companyOperations } from './CompanyDescription';
 import { contactFields, contactOperations } from './ContactDescription';
 import { contactSegmentFields, contactSegmentOperations } from './ContactSegmentDescription';
+import { fieldFields, fieldOperations } from './FieldDescription';
 import { mauticApiRequestAllItems } from './GenericFunctions';
+import { notificationFields, notificationOperations } from './NotificationDescription';
 import { segmentEmailFields, segmentEmailOperations } from './SegmentEmailDescription';
 import { segmentFields, segmentOperations } from './SegmentDescription';
 import { tagFields, tagOperations } from './TagDescription';
@@ -126,6 +130,16 @@ export class MauticAdvanced implements INodeType {
             description: 'Add/remove contacts to/from a segment',
           },
           {
+            name: 'Field',
+            value: 'field',
+            description: 'Manage custom fields for contacts and companies',
+          },
+          {
+            name: 'Notification',
+            value: 'notification',
+            description: 'Create, update, and retrieve notifications',
+          },
+          {
             name: 'Segment',
             value: 'segment',
             description: 'Create, update, and retrieve segments',
@@ -155,6 +169,10 @@ export class MauticAdvanced implements INodeType {
       ...campaignContactFields,
       ...companyContactOperations,
       ...companyContactFields,
+      ...fieldOperations,
+      ...fieldFields,
+      ...notificationOperations,
+      ...notificationFields,
       ...segmentEmailOperations,
       ...segmentEmailFields,
       ...tagOperations,
@@ -168,24 +186,6 @@ export class MauticAdvanced implements INodeType {
 
   methods = {
     loadOptions: {
-      // Get all the available companies to display them to user so that they can
-      // select them easily
-      async getCompanies(this: ILoadOptionsFunctions): Promise<INodePropertyOptions[]> {
-        const returnData: INodePropertyOptions[] = [];
-        const companies = await mauticApiRequestAllItems.call(
-          this,
-          'companies',
-          'GET',
-          '/companies',
-        );
-        for (const company of companies) {
-          returnData.push({
-            name: company.fields.all.companyname,
-            value: company.fields.all.companyname,
-          });
-        }
-        return returnData;
-      },
       // Get all the available tags to display them to user so that they can
       // select them easily
       async getTags(this: ILoadOptionsFunctions): Promise<INodePropertyOptions[]> {
@@ -396,6 +396,12 @@ export class MauticAdvanced implements INodeType {
             break;
           case 'companyContact':
             result = await executeCompanyContactOperation(this, operation, i);
+            break;
+          case 'field':
+            result = await executeFieldOperation(this, operation, i);
+            break;
+          case 'notification':
+            result = await executeNotificationOperation(this, operation, i);
             break;
           default:
             throw new NodeOperationError(

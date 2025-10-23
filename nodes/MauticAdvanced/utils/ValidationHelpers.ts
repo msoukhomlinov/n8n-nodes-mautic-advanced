@@ -68,14 +68,16 @@ export function validateOptionalParam<T = any>(
     }
     switch (expectedType) {
       case 'string':
-        if (typeof value !== 'string') throw new Error(`Parameter '${paramName}' must be a string.`);
+        if (typeof value !== 'string')
+          throw new Error(`Parameter '${paramName}' must be a string.`);
         return value as T;
       case 'number':
         if (typeof value !== 'number' || isNaN(value as any))
           throw new Error(`Parameter '${paramName}' must be a valid number.`);
         return value as T;
       case 'boolean':
-        if (typeof value !== 'boolean') throw new Error(`Parameter '${paramName}' must be a boolean.`);
+        if (typeof value !== 'boolean')
+          throw new Error(`Parameter '${paramName}' must be a boolean.`);
         return value as T;
       case 'object':
         if (typeof value !== 'object' || (value as any) === null)
@@ -104,7 +106,9 @@ export function validateEmail(
 ): string {
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   if (!emailRegex.test(email)) {
-    throw new NodeOperationError(context.getNode(), 'Invalid email format provided.', { itemIndex });
+    throw new NodeOperationError(context.getNode(), 'Invalid email format provided.', {
+      itemIndex,
+    });
   }
   return email;
 }
@@ -157,11 +161,9 @@ export function validateArrayParam<T = any>(
 ): T[] {
   const value = context.getNodeParameter(paramName, itemIndex) as T[];
   if (!Array.isArray(value)) {
-    throw new NodeOperationError(
-      context.getNode(),
-      `Parameter '${paramName}' must be an array.`,
-      { itemIndex },
-    );
+    throw new NodeOperationError(context.getNode(), `Parameter '${paramName}' must be an array.`, {
+      itemIndex,
+    });
   }
   if (minLength !== undefined && value.length < minLength) {
     throw new NodeOperationError(
@@ -197,4 +199,3 @@ export function validateOptionsStructure(
     }
   }
 }
-

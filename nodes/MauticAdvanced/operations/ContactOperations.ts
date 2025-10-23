@@ -65,6 +65,27 @@ export async function executeContactOperation(
       case 'getCompanies':
         responseData = await getContactCompanies(context, i);
         break;
+      case 'getCampaigns':
+        responseData = await getContactCampaigns(context, i);
+        break;
+      case 'getSegments':
+        responseData = await getContactSegments(context, i);
+        break;
+      case 'addToSegments':
+        responseData = await addContactToSegments(context, i);
+        break;
+      case 'removeFromSegments':
+        responseData = await removeContactFromSegments(context, i);
+        break;
+      case 'addToCampaigns':
+        responseData = await addContactToCampaigns(context, i);
+        break;
+      case 'removeFromCampaigns':
+        responseData = await removeContactFromCampaigns(context, i);
+        break;
+      case 'getAllActivity':
+        responseData = await getAllContactActivity(context, i);
+        break;
       default:
         throw new NodeOperationError(
           context.getNode(),
@@ -201,14 +222,14 @@ async function sendEmailToContact(context: IExecuteFunctions, itemIndex: number)
 
 async function editContactPoints(context: IExecuteFunctions, itemIndex: number): Promise<any> {
   const contactId = getRequiredParam(context, 'contactId', itemIndex);
-  const value = getRequiredParam(context, 'value', itemIndex);
-  const body: any = { value };
-  const response = await makeApiRequest(
-    context,
-    'POST',
-    `/contacts/${contactId}/points/edit`,
-    body,
-  );
+  const action = getRequiredParam(context, 'action', itemIndex);
+  const points = getRequiredParam(context, 'points', itemIndex);
+  const body: any = { points };
+
+  const endpoint =
+    action === 'add' ? `/contacts/${contactId}/points/plus` : `/contacts/${contactId}/points/minus`;
+
+  const response = await makeApiRequest(context, 'POST', endpoint, body);
   return response.contact;
 }
 
@@ -309,6 +330,97 @@ async function getContactCompanies(context: IExecuteFunctions, itemIndex: number
     'GET',
     `/contacts/${contactId}/companies`,
   );
+}
+
+async function getContactCampaigns(context: IExecuteFunctions, itemIndex: number): Promise<any> {
+  const contactId = getRequiredParam(context, 'contactId', itemIndex);
+  return await makePaginatedRequest(
+    context,
+    'campaigns',
+    'GET',
+    `/contacts/${contactId}/campaigns`,
+  );
+}
+
+async function getContactSegments(context: IExecuteFunctions, itemIndex: number): Promise<any> {
+  const contactId = getRequiredParam(context, 'contactId', itemIndex);
+  return await makePaginatedRequest(context, 'segments', 'GET', `/contacts/${contactId}/segments`);
+}
+
+async function addContactToSegments(context: IExecuteFunctions, itemIndex: number): Promise<any> {
+  const contactId = getRequiredParam(context, 'contactId', itemIndex);
+  const segmentIds = getRequiredParam(context, 'segmentIds', itemIndex);
+  const body = { segments: segmentIds };
+  const response = await makeApiRequest(
+    context,
+    'POST',
+    `/contacts/${contactId}/segments/add`,
+    body,
+  );
+  return response.contact;
+}
+
+async function removeContactFromSegments(
+  context: IExecuteFunctions,
+  itemIndex: number,
+): Promise<any> {
+  const contactId = getRequiredParam(context, 'contactId', itemIndex);
+  const segmentIds = getRequiredParam(context, 'segmentIds', itemIndex);
+  const body = { segments: segmentIds };
+  const response = await makeApiRequest(
+    context,
+    'POST',
+    `/contacts/${contactId}/segments/remove`,
+    body,
+  );
+  return response.contact;
+}
+
+async function addContactToCampaigns(context: IExecuteFunctions, itemIndex: number): Promise<any> {
+  const contactId = getRequiredParam(context, 'contactId', itemIndex);
+  const campaignIds = getRequiredParam(context, 'campaignIds', itemIndex);
+  const body = { campaigns: campaignIds };
+  const response = await makeApiRequest(
+    context,
+    'POST',
+    `/contacts/${contactId}/campaigns/add`,
+    body,
+  );
+  return response.contact;
+}
+
+async function removeContactFromCampaigns(
+  context: IExecuteFunctions,
+  itemIndex: number,
+): Promise<any> {
+  const contactId = getRequiredParam(context, 'contactId', itemIndex);
+  const campaignIds = getRequiredParam(context, 'campaignIds', itemIndex);
+  const body = { campaigns: campaignIds };
+  const response = await makeApiRequest(
+    context,
+    'POST',
+    `/contacts/${contactId}/campaigns/remove`,
+    body,
+  );
+  return response.contact;
+}
+
+async function getAllContactActivity(context: IExecuteFunctions, itemIndex: number): Promise<any> {
+  const options = getOptionalParam(context, 'options', itemIndex, {});
+  const qs: any = {};
+  const filters: any = {};
+  if ((options as any).search) filters.search = (options as any).search;
+  if ((options as any).includeEvents)
+    filters.includeEvents = (options as any).includeEvents.split(',');
+  if ((options as any).excludeEvents)
+    filters.excludeEvents = (options as any).excludeEvents.split(',');
+  if ((options as any).dateFrom) filters.dateFrom = (options as any).dateFrom;
+  if ((options as any).dateTo) filters.dateTo = (options as any).dateTo;
+  qs['filters'] = filters;
+  if ((options as any).orderBy)
+    qs.order = [(options as any).orderBy, (options as any).orderByDir ?? 'asc'];
+  if ((options as any).limit) qs.limit = (options as any).limit;
+  return await makePaginatedRequest(context, 'events', 'GET', `/contacts/activity`, {}, qs);
 }
 
 function normalizeTagsInput(tagsInput: any): string[] {

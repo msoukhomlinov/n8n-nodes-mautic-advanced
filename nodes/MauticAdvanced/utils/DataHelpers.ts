@@ -2,11 +2,7 @@ import type { IExecuteFunctions, IDataObject } from 'n8n-workflow';
 import { validateJSON } from '../GenericFunctions';
 
 // Process simple response data extraction
-export function processSimpleResponse(
-  responseData: any,
-  simple: boolean,
-  dataPath?: string,
-): any {
+export function processSimpleResponse(responseData: any, simple: boolean, dataPath?: string): any {
   if (!simple || !dataPath) {
     return responseData;
   }
@@ -96,7 +92,7 @@ export function processBatchIds(
     throw new Error('No IDs provided or found in input items.');
   }
   const ids = inputItems
-    .map((item) => (item.json?.[idField] ?? item.json?.id))
+    .map((item) => item.json?.[idField] ?? item.json?.id)
     .filter((id) => id !== undefined && id !== null && id !== '')
     .map((id) => String(id));
   if (ids.length === 0) {

@@ -56,7 +56,12 @@ export async function executeSegmentOperation(
 
 async function createSegment(context: IExecuteFunctions, itemIndex: number): Promise<any> {
   const name = getRequiredParam<string>(context, 'name', itemIndex);
-  const additionalFields = getOptionalParam<IDataObject>(context, 'additionalFields', itemIndex, {});
+  const additionalFields = getOptionalParam<IDataObject>(
+    context,
+    'additionalFields',
+    itemIndex,
+    {},
+  );
   const body: IDataObject = { name, ...additionalFields };
   const response = await makeApiRequest(context, 'POST', '/segments/new', body);
   return response.list;
@@ -66,7 +71,12 @@ async function updateSegment(context: IExecuteFunctions, itemIndex: number): Pro
   const segmentId = getRequiredParam<string>(context, 'segmentId', itemIndex);
   const createIfNotFound = getOptionalParam<boolean>(context, 'createIfNotFound', itemIndex, false);
   const name = getRequiredParam<string>(context, 'name', itemIndex);
-  const additionalFields = getOptionalParam<IDataObject>(context, 'additionalFields', itemIndex, {});
+  const additionalFields = getOptionalParam<IDataObject>(
+    context,
+    'additionalFields',
+    itemIndex,
+    {},
+  );
   const body: IDataObject = { name, ...additionalFields };
   const method = createIfNotFound ? 'PUT' : 'PATCH';
   const response = await makeApiRequest(context, method, `/segments/${segmentId}/edit`, body);
@@ -105,10 +115,17 @@ async function addContactToSegment(context: IExecuteFunctions, itemIndex: number
   return await makeApiRequest(context, 'POST', `/segments/${segmentId}/contact/${contactId}/add`);
 }
 
-async function removeContactFromSegment(context: IExecuteFunctions, itemIndex: number): Promise<any> {
+async function removeContactFromSegment(
+  context: IExecuteFunctions,
+  itemIndex: number,
+): Promise<any> {
   const segmentId = getRequiredParam<string>(context, 'segmentId', itemIndex);
   const contactId = getRequiredParam<string>(context, 'contactId', itemIndex);
-  return await makeApiRequest(context, 'POST', `/segments/${segmentId}/contact/${contactId}/remove`);
+  return await makeApiRequest(
+    context,
+    'POST',
+    `/segments/${segmentId}/contact/${contactId}/remove`,
+  );
 }
 
 async function addContactsToSegment(context: IExecuteFunctions, itemIndex: number): Promise<any> {
