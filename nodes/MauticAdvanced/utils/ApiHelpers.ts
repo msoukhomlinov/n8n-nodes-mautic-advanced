@@ -78,11 +78,76 @@ export function handleApiError(
       );
     }
     if (error.httpCode === '400') {
-      throw new NodeOperationError(
-        context.getNode(),
-        `Invalid data provided for ${operation} ${resource}. Please check your input parameters.`,
-        { itemIndex: 0 },
-      );
+      // Extract detailed validation errors from Mautic API response
+      let errorMessage = `Invalid data provided for ${operation} ${resource}.`;
+
+      try {
+        const errorData = error.description as any;
+
+        // Check if we have a direct error message from Mautic API
+        if (typeof errorData === 'string' && errorData.trim()) {
+          // Parse field-specific error messages like "field_name: error message"
+          const fieldErrorMatch = errorData.match(/^([^:]+):\s*(.+)$/);
+          if (fieldErrorMatch) {
+            const fieldName = fieldErrorMatch[1].trim();
+            const errorMsg = fieldErrorMatch[2].trim();
+            errorMessage += ` Validation error:\n- ${fieldName}: ${errorMsg}\n`;
+          } else {
+            // If it doesn't match the field:message pattern, show the raw message
+            errorMessage += ` Error: ${errorData}\n`;
+          }
+        }
+        // Check for errors array (current Mautic API format)
+        else if (
+          errorData?.errors &&
+          Array.isArray(errorData.errors) &&
+          errorData.errors.length > 0
+        ) {
+          const validationErrors: string[] = [];
+
+          errorData.errors.forEach((err: any) => {
+            if (err.details && typeof err.details === 'object') {
+              // Extract field-specific validation messages
+              Object.entries(err.details).forEach(([field, messages]: [string, any]) => {
+                if (Array.isArray(messages)) {
+                  messages.forEach((msg: string) => {
+                    validationErrors.push(`- ${field}: ${msg}`);
+                  });
+                }
+              });
+            } else if (err.message) {
+              // Fallback to error message if no details
+              validationErrors.push(`- ${err.message}`);
+            }
+          });
+
+          if (validationErrors.length > 0) {
+            errorMessage += ` Validation errors:\n${validationErrors.join('\n')}\n`;
+          }
+        }
+        // Check for deprecated error format (Mautic < 2.6.0)
+        else if (errorData?.error?.details && typeof errorData.error.details === 'object') {
+          const validationErrors: string[] = [];
+
+          Object.entries(errorData.error.details).forEach(([field, messages]: [string, any]) => {
+            if (Array.isArray(messages)) {
+              messages.forEach((msg: string) => {
+                validationErrors.push(`- ${field}: ${msg}`);
+              });
+            }
+          });
+
+          if (validationErrors.length > 0) {
+            errorMessage += ` Validation errors:\n${validationErrors.join('\n')}\n`;
+          }
+        }
+      } catch (parseError) {
+        // If we can't parse the error details, just use the generic message
+      }
+
+      errorMessage += ' Please check your input parameters.';
+
+      throw new NodeOperationError(context.getNode(), errorMessage, { itemIndex: 0 });
     }
     throw error;
   }

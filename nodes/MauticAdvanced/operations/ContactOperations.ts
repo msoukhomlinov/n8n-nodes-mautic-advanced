@@ -115,7 +115,37 @@ async function createContact(context: IExecuteFunctions, itemIndex: number): Pro
     body = validateJsonParameter(context, 'bodyJson', itemIndex);
   }
   addContactFields(body, additionalFields);
-  const response = await makeApiRequest(context, 'POST', '/contacts/new', body);
+
+  // Data sanitization: Remove empty string values and validate email format
+  const sanitizedBody: any = {};
+  Object.entries(body).forEach(([key, value]) => {
+    // Skip empty strings as Mautic sometimes rejects them
+    if (value !== '' && value !== null && value !== undefined) {
+      sanitizedBody[key] = value;
+    }
+  });
+
+  // Basic email validation if email is provided
+  if (sanitizedBody.email && typeof sanitizedBody.email === 'string') {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(sanitizedBody.email)) {
+      throw new NodeOperationError(
+        context.getNode(),
+        `Invalid email format: ${sanitizedBody.email}`,
+        { itemIndex },
+      );
+    }
+  }
+
+  // Log the sanitized body for debugging (only in development)
+  if (process.env.NODE_ENV === 'development') {
+    console.log(
+      'Mautic Contact Creation - Sanitized Body:',
+      JSON.stringify(sanitizedBody, null, 2),
+    );
+  }
+
+  const response = await makeApiRequest(context, 'POST', '/contacts/new', sanitizedBody);
   const contactData = [response.contact];
   return processContactFields(contactData, options);
 }

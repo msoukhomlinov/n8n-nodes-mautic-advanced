@@ -1,6 +1,14 @@
 # Changelog
 
 
+## [0.3.8] - 2025-10-23
+### Enhanced
+- **Error Handling**: Significantly improved error handling for Contact creation operations with detailed validation error messages
+- **API Error Parsing**: Enhanced error parsing to extract specific field validation errors from Mautic API responses
+- **Data Sanitization**: Added automatic data sanitization in contact creation to remove empty values and validate email formats
+- **Error Propagation**: Improved error object preservation in `mauticApiRequest` function to maintain detailed error context
+
+
 ## [0.3.7] - 2025-10-23
 ### Added
 - **Field Management**: Added comprehensive support for managing custom fields for both Contact and Company records with full CRUD operations, all Mautic field types, and proper pagination support.

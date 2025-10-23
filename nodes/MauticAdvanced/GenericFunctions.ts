@@ -54,11 +54,19 @@ export async function mauticApiRequest(
 
     if (returnData.errors) {
       // They seem to sometimes return 200 status but still error.
-      throw new NodeApiError(this.getNode(), returnData as JsonObject);
+      // Preserve the full error object including details for better error handling
+      throw new NodeApiError(this.getNode(), returnData as JsonObject, {
+        httpCode: '400',
+        description: returnData,
+      });
     }
 
     return returnData;
   } catch (error) {
+    // Preserve error details when available for better error handling
+    if (error instanceof NodeApiError) {
+      throw error;
+    }
     throw new NodeApiError(this.getNode(), error as JsonObject);
   }
 }
