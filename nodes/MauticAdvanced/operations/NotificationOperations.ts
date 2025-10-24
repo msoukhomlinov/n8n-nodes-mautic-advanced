@@ -7,7 +7,7 @@ import {
   getOptionalParam,
   getRequiredParam,
 } from '../utils/ApiHelpers';
-import { buildQueryFromOptions, wrapSingleItem } from '../utils/DataHelpers';
+import { buildQueryFromOptions, wrapSingleItem, convertNumericStrings } from '../utils/DataHelpers';
 
 export async function executeNotificationOperation(
   context: IExecuteFunctions,
@@ -145,7 +145,7 @@ async function getNotification(context: IExecuteFunctions, itemIndex: number): P
 
   const endpoint = `/notifications/${notificationId}`;
   const response = await makeApiRequest(context, 'GET', endpoint);
-  return response.notification;
+  return convertNumericStrings(response.notification);
 }
 
 async function getAllNotifications(context: IExecuteFunctions, itemIndex: number): Promise<any[]> {
@@ -156,11 +156,13 @@ async function getAllNotifications(context: IExecuteFunctions, itemIndex: number
   const query = buildQueryFromOptions(options);
 
   if (returnAll) {
-    return await makePaginatedRequest(context, 'notifications', 'GET', '/notifications', {}, query);
+    const result = await makePaginatedRequest(context, 'notifications', 'GET', '/notifications', {}, query);
+    return convertNumericStrings(result);
   } else {
     query.limit = limit;
     const response = await makeApiRequest(context, 'GET', '/notifications', {}, query);
-    return Object.values(response.notifications || {});
+    const data = Object.values(response.notifications || {});
+    return convertNumericStrings(data);
   }
 }
 

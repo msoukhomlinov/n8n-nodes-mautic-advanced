@@ -13,6 +13,7 @@ import {
   processContactFields,
   validateJsonParameter,
   wrapSingleItem,
+  convertNumericStrings,
 } from '../utils/DataHelpers';
 
 export async function executeContactOperation(
@@ -85,6 +86,12 @@ export async function executeContactOperation(
         break;
       case 'getAllActivity':
         responseData = await getAllContactActivity(context, i);
+        break;
+      case 'getOwners':
+        responseData = await getContactOwners(context);
+        break;
+      case 'getFields':
+        responseData = await getContactFields(context);
         break;
       default:
         throw new NodeOperationError(
@@ -177,7 +184,8 @@ async function getContact(context: IExecuteFunctions, itemIndex: number): Promis
   const contactId = getRequiredParam(context, 'contactId', itemIndex);
   const response = await makeApiRequest(context, 'GET', `/contacts/${contactId}`);
   const contactData = [response.contact];
-  return processContactFields(contactData, options, (options as any).fieldsToReturn);
+  const processedData = processContactFields(contactData, options, (options as any).fieldsToReturn);
+  return convertNumericStrings(processedData);
 }
 
 async function getAllContacts(context: IExecuteFunctions, itemIndex: number): Promise<any> {
@@ -219,7 +227,12 @@ async function getAllContacts(context: IExecuteFunctions, itemIndex: number): Pr
       responseData = response.contacts ? Object.values(response.contacts) : [];
     }
   }
-  return processContactFields(responseData, options, (options as any).fieldsToReturn);
+  const processedData = processContactFields(
+    responseData,
+    options,
+    (options as any).fieldsToReturn,
+  );
+  return convertNumericStrings(processedData);
 }
 
 async function deleteContact(context: IExecuteFunctions, itemIndex: number): Promise<any> {
@@ -254,10 +267,17 @@ async function editContactPoints(context: IExecuteFunctions, itemIndex: number):
   const contactId = getRequiredParam(context, 'contactId', itemIndex);
   const action = getRequiredParam(context, 'action', itemIndex);
   const points = getRequiredParam(context, 'points', itemIndex);
-  const body: any = { points };
+  const eventName = getOptionalParam(context, 'eventName', itemIndex, '');
+  const actionName = getOptionalParam(context, 'actionName', itemIndex, '');
+
+  const body: any = {};
+  if (eventName) body.eventName = eventName;
+  if (actionName) body.actionName = actionName;
 
   const endpoint =
-    action === 'add' ? `/contacts/${contactId}/points/plus` : `/contacts/${contactId}/points/minus`;
+    action === 'add'
+      ? `/contacts/${contactId}/points/plus/${points}`
+      : `/contacts/${contactId}/points/minus/${points}`;
 
   const response = await makeApiRequest(context, 'POST', endpoint, body);
   return response.contact;
@@ -267,13 +287,21 @@ async function editDoNotContactList(context: IExecuteFunctions, itemIndex: numbe
   const contactId = getRequiredParam(context, 'contactId', itemIndex);
   const action = getRequiredParam(context, 'action', itemIndex);
   const channel = getRequiredParam(context, 'channel', itemIndex);
-  const body: any = { action, channel };
-  const response = await makeApiRequest(
-    context,
-    'POST',
-    `/contacts/${contactId}/dnc/${channel}/${action}`,
-    body,
-  );
+  const reason = getOptionalParam(context, 'reason', itemIndex, 3); // Default to Manual (3)
+  const channelId = getOptionalParam(context, 'channelId', itemIndex, '');
+  const comments = getOptionalParam(context, 'comments', itemIndex, '');
+
+  const body: any = {};
+  if (reason !== undefined) body.reason = reason;
+  if (channelId) body.channelId = channelId;
+  if (comments) body.comments = comments;
+
+  const endpoint =
+    action === 'add'
+      ? `/contacts/${contactId}/dnc/${channel}/add`
+      : `/contacts/${contactId}/dnc/${channel}/remove`;
+
+  const response = await makeApiRequest(context, 'POST', endpoint, body);
   return response.contact;
 }
 
@@ -309,7 +337,13 @@ async function removeUtmTags(context: IExecuteFunctions, itemIndex: number): Pro
 
 async function getContactDevices(context: IExecuteFunctions, itemIndex: number): Promise<any> {
   const contactId = getRequiredParam(context, 'contactId', itemIndex);
-  return await makePaginatedRequest(context, 'devices', 'GET', `/contacts/${contactId}/devices`);
+  const result = await makePaginatedRequest(
+    context,
+    'devices',
+    'GET',
+    `/contacts/${contactId}/devices`,
+  );
+  return convertNumericStrings(result);
 }
 
 async function getContactActivity(context: IExecuteFunctions, itemIndex: number): Promise<any> {
@@ -328,7 +362,7 @@ async function getContactActivity(context: IExecuteFunctions, itemIndex: number)
   if ((options as any).orderBy)
     qs.order = [(options as any).orderBy, (options as any).orderByDir ?? 'asc'];
   if ((options as any).limit) qs.limit = (options as any).limit;
-  return await makePaginatedRequest(
+  const result = await makePaginatedRequest(
     context,
     'events',
     'GET',
@@ -336,13 +370,14 @@ async function getContactActivity(context: IExecuteFunctions, itemIndex: number)
     {},
     qs,
   );
+  return convertNumericStrings(result);
 }
 
 async function getContactNotes(context: IExecuteFunctions, itemIndex: number): Promise<any> {
   const contactId = getRequiredParam(context, 'contactId', itemIndex);
   const options = getOptionalParam(context, 'options', itemIndex, {});
   const qs: any = options;
-  return await makePaginatedRequest(
+  const result = await makePaginatedRequest(
     context,
     'notes',
     'GET',
@@ -350,31 +385,40 @@ async function getContactNotes(context: IExecuteFunctions, itemIndex: number): P
     {},
     qs,
   );
+  return convertNumericStrings(result);
 }
 
 async function getContactCompanies(context: IExecuteFunctions, itemIndex: number): Promise<any> {
   const contactId = getRequiredParam(context, 'contactId', itemIndex);
-  return await makePaginatedRequest(
+  const result = await makePaginatedRequest(
     context,
     'companies',
     'GET',
     `/contacts/${contactId}/companies`,
   );
+  return convertNumericStrings(result);
 }
 
 async function getContactCampaigns(context: IExecuteFunctions, itemIndex: number): Promise<any> {
   const contactId = getRequiredParam(context, 'contactId', itemIndex);
-  return await makePaginatedRequest(
+  const result = await makePaginatedRequest(
     context,
     'campaigns',
     'GET',
     `/contacts/${contactId}/campaigns`,
   );
+  return convertNumericStrings(result);
 }
 
 async function getContactSegments(context: IExecuteFunctions, itemIndex: number): Promise<any> {
   const contactId = getRequiredParam(context, 'contactId', itemIndex);
-  return await makePaginatedRequest(context, 'segments', 'GET', `/contacts/${contactId}/segments`);
+  const result = await makePaginatedRequest(
+    context,
+    'segments',
+    'GET',
+    `/contacts/${contactId}/segments`,
+  );
+  return convertNumericStrings(result);
 }
 
 async function addContactToSegments(context: IExecuteFunctions, itemIndex: number): Promise<any> {
@@ -450,7 +494,8 @@ async function getAllContactActivity(context: IExecuteFunctions, itemIndex: numb
   if ((options as any).orderBy)
     qs.order = [(options as any).orderBy, (options as any).orderByDir ?? 'asc'];
   if ((options as any).limit) qs.limit = (options as any).limit;
-  return await makePaginatedRequest(context, 'events', 'GET', `/contacts/activity`, {}, qs);
+  const result = await makePaginatedRequest(context, 'events', 'GET', `/contacts/activity`, {}, qs);
+  return convertNumericStrings(result);
 }
 
 function normalizeTagsInput(tagsInput: any): string[] {
@@ -578,4 +623,14 @@ async function getContactsWithDncFilter(
     currentStart += pageLimit;
   }
   return contacts;
+}
+
+async function getContactOwners(context: IExecuteFunctions): Promise<any> {
+  const response = await makeApiRequest(context, 'GET', '/contacts/list/owners');
+  return convertNumericStrings(response);
+}
+
+async function getContactFields(context: IExecuteFunctions): Promise<any> {
+  const response = await makeApiRequest(context, 'GET', '/contacts/list/fields');
+  return convertNumericStrings(response);
 }

@@ -7,7 +7,7 @@ import {
   getOptionalParam,
   getRequiredParam,
 } from '../utils/ApiHelpers';
-import { buildQueryFromOptions, wrapSingleItem } from '../utils/DataHelpers';
+import { buildQueryFromOptions, wrapSingleItem, convertNumericStrings } from '../utils/DataHelpers';
 
 export async function executeCompanyOperation(
   context: IExecuteFunctions,
@@ -180,7 +180,7 @@ async function getCompany(context: IExecuteFunctions, itemIndex: number): Promis
   if (simple) {
     result = result.fields.all;
   }
-  return result;
+  return convertNumericStrings(result);
 }
 
 async function getAllCompanies(context: IExecuteFunctions, itemIndex: number): Promise<any> {
@@ -217,7 +217,7 @@ async function getAllCompanies(context: IExecuteFunctions, itemIndex: number): P
   if (simple) {
     responseData = responseData.map((item: any) => item.fields.all);
   }
-  return responseData;
+  return convertNumericStrings(responseData);
 }
 
 async function deleteCompany(context: IExecuteFunctions, itemIndex: number): Promise<any> {

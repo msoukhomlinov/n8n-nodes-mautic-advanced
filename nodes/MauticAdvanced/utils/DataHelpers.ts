@@ -114,3 +114,37 @@ export function createBatchSuccessResponse(
     message: customMessage || `Successfully ${operation} ${ids.length} items.`,
   } as IDataObject;
 }
+
+// Convert numeric strings to numbers recursively
+export function convertNumericStrings(data: any): any {
+  if (data === null || data === undefined) {
+    return data;
+  }
+
+  if (typeof data === 'string') {
+    // Check if string is a valid number (including negative numbers and decimals)
+    const numericRegex = /^-?\d+(\.\d+)?$/;
+    if (numericRegex.test(data)) {
+      const num = parseFloat(data);
+      // Only convert if parseFloat doesn't lose precision and result is finite
+      if (!isNaN(num) && isFinite(num) && num.toString() === data) {
+        return num;
+      }
+    }
+    return data;
+  }
+
+  if (Array.isArray(data)) {
+    return data.map(convertNumericStrings);
+  }
+
+  if (typeof data === 'object') {
+    const converted: any = {};
+    for (const [key, value] of Object.entries(data)) {
+      converted[key] = convertNumericStrings(value);
+    }
+    return converted;
+  }
+
+  return data;
+}

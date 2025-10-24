@@ -118,6 +118,13 @@ export const campaignFields: INodeProperties[] = [
         default: '',
         description: 'Date/time when the campaign should be published',
       },
+      {
+        displayName: 'Alias',
+        name: 'alias',
+        type: 'string',
+        default: '',
+        description: 'Used to generate the URL for the campaign',
+      },
     ],
   },
   /* -------------------------------------------------------------------------- */
@@ -135,6 +142,19 @@ export const campaignFields: INodeProperties[] = [
       },
     },
     default: '',
+  },
+  {
+    displayName: 'Create If Not Found',
+    name: 'createIfNotFound',
+    type: 'boolean',
+    displayOptions: {
+      show: {
+        resource: ['campaign'],
+        operation: ['update'],
+      },
+    },
+    default: false,
+    description: 'Create a new campaign if the given ID does not exist (uses PUT instead of PATCH)',
   },
   {
     displayName: 'Update Fields',
@@ -183,6 +203,13 @@ export const campaignFields: INodeProperties[] = [
         type: 'dateTime',
         default: '',
         description: 'Date/time when the campaign should be published',
+      },
+      {
+        displayName: 'Alias',
+        name: 'alias',
+        type: 'string',
+        default: '',
+        description: 'Used to generate the URL for the campaign',
       },
     ],
   },

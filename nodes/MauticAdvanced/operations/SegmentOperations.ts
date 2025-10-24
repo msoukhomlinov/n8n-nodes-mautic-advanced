@@ -7,7 +7,7 @@ import {
   getRequiredParam,
   handleApiError,
 } from '../utils/ApiHelpers';
-import { buildQueryFromOptions, processBatchIds, wrapSingleItem } from '../utils/DataHelpers';
+import { buildQueryFromOptions, processBatchIds, wrapSingleItem, convertNumericStrings } from '../utils/DataHelpers';
 
 export async function executeSegmentOperation(
   context: IExecuteFunctions,
@@ -86,7 +86,7 @@ async function updateSegment(context: IExecuteFunctions, itemIndex: number): Pro
 async function getSegment(context: IExecuteFunctions, itemIndex: number): Promise<any> {
   const segmentId = getRequiredParam<string>(context, 'segmentId', itemIndex);
   const response = await makeApiRequest(context, 'GET', `/segments/${segmentId}`);
-  return response.list;
+  return convertNumericStrings(response.list);
 }
 
 async function getAllSegments(context: IExecuteFunctions, itemIndex: number): Promise<any> {
@@ -94,12 +94,14 @@ async function getAllSegments(context: IExecuteFunctions, itemIndex: number): Pr
   const options = getOptionalParam<IDataObject>(context, 'options', itemIndex, {});
   const qs = buildQueryFromOptions(options);
   if (returnAll) {
-    return await makePaginatedRequest(context, 'lists', 'GET', '/segments', {}, qs);
+    const result = await makePaginatedRequest(context, 'lists', 'GET', '/segments', {}, qs);
+    return convertNumericStrings(result);
   } else {
     const limit = getOptionalParam<number>(context, 'limit', itemIndex, 30);
     qs.limit = limit;
     const response = await makeApiRequest(context, 'GET', '/segments', {}, qs);
-    return response.lists ? Object.values(response.lists) : [];
+    const data = response.lists ? Object.values(response.lists) : [];
+    return convertNumericStrings(data);
   }
 }
 

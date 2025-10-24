@@ -1,6 +1,17 @@
 # Changelog
 
 
+## [0.3.9] - 2025-10-24
+### Fixed
+- **Numeric Field Types**: Fixed numeric fields (id, owner_id, points, etc.) being returned as strings instead of numbers in all get/getAll operations across all resources (Contact, Company, Campaign, Segment, Field, Notification, Tag, Category)
+- **Data Type Consistency**: All numeric fields now return proper number types instead of string representations, improving data consistency and downstream processing
+- **API Alignment**: Fixed Contact DNC endpoints to use correct API paths (`/contacts/{id}/dnc/{channel}/add|remove` instead of `/contacts/{id}/dnc/{channel}/{action}`)
+- **API Alignment**: Fixed Contact Points endpoints to include `/{points}` in URL paths (`/contacts/{id}/points/plus|minus/{points}`)
+- **API Alignment**: Added missing DNC parameters (`reason`, `channelId`, `comments`) and Points parameters (`eventName`, `actionName`)
+- **API Alignment**: Added Campaign `alias` parameter to create/update operations
+- **API Alignment**: Added `createIfNotFound` option to Campaign and Category update operations (uses PUT instead of PATCH)
+- **API Alignment**: Added Contact list operations (`getOwners` and `getFields`) for `/contacts/list/owners` and `/contacts/list/fields` endpoints
+
 ## [0.3.8] - 2025-10-23
 ### Enhanced
 - **Error Handling**: Significantly improved error handling for Contact creation operations with detailed validation error messages

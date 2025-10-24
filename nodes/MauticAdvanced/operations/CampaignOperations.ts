@@ -7,7 +7,7 @@ import {
   getOptionalParam,
   getRequiredParam,
 } from '../utils/ApiHelpers';
-import { buildQueryFromOptions, wrapSingleItem } from '../utils/DataHelpers';
+import { buildQueryFromOptions, wrapSingleItem, convertNumericStrings } from '../utils/DataHelpers';
 
 export async function executeCampaignOperation(
   context: IExecuteFunctions,
@@ -66,9 +66,11 @@ async function createCampaign(context: IExecuteFunctions, itemIndex: number): Pr
 
 async function updateCampaign(context: IExecuteFunctions, itemIndex: number): Promise<any> {
   const campaignId = getRequiredParam<string>(context, 'campaignId', itemIndex);
+  const createIfNotFound = getOptionalParam<boolean>(context, 'createIfNotFound', itemIndex, false);
   const updateFields = getOptionalParam<IDataObject>(context, 'updateFields', itemIndex, {});
   const body: IDataObject = { ...updateFields };
-  const response = await makeApiRequest(context, 'PATCH', `/campaigns/${campaignId}/edit`, body);
+  const method = createIfNotFound ? 'PUT' : 'PATCH';
+  const response = await makeApiRequest(context, method, `/campaigns/${campaignId}/edit`, body);
   return response.campaign;
 }
 
@@ -81,7 +83,7 @@ async function cloneCampaign(context: IExecuteFunctions, itemIndex: number): Pro
 async function getCampaign(context: IExecuteFunctions, itemIndex: number): Promise<any> {
   const campaignId = getRequiredParam<string>(context, 'campaignId', itemIndex);
   const response = await makeApiRequest(context, 'GET', `/campaigns/${campaignId}`);
-  return response.campaign;
+  return convertNumericStrings(response.campaign);
 }
 
 async function getAllCampaigns(context: IExecuteFunctions, itemIndex: number): Promise<any> {
@@ -91,11 +93,12 @@ async function getAllCampaigns(context: IExecuteFunctions, itemIndex: number): P
   if (!qs.orderBy) qs.orderBy = 'id';
   if (!qs.orderByDir) qs.orderByDir = 'asc';
   if (returnAll) {
-    return await makePaginatedRequest(context, 'campaigns', 'GET', '/campaigns', {}, qs);
+    const result = await makePaginatedRequest(context, 'campaigns', 'GET', '/campaigns', {}, qs);
+    return convertNumericStrings(result);
   } else {
     qs.limit = getOptionalParam<number>(context, 'limit', itemIndex, 30);
     const response = await makeApiRequest(context, 'GET', '/campaigns', {}, qs);
-    return response.campaigns;
+    return convertNumericStrings(response.campaigns);
   }
 }
 
@@ -105,7 +108,7 @@ async function getCampaignContacts(context: IExecuteFunctions, itemIndex: number
   const options = getOptionalParam<IDataObject>(context, 'options', itemIndex, {});
   const qs = buildQueryFromOptions(options);
   if (returnAll) {
-    return await makePaginatedRequest(
+    const result = await makePaginatedRequest(
       context,
       'contacts',
       'GET',
@@ -113,6 +116,7 @@ async function getCampaignContacts(context: IExecuteFunctions, itemIndex: number
       {},
       qs,
     );
+    return convertNumericStrings(result);
   } else {
     qs.limit = getOptionalParam<number>(context, 'limit', itemIndex, 30);
     const response = await makeApiRequest(
@@ -122,7 +126,7 @@ async function getCampaignContacts(context: IExecuteFunctions, itemIndex: number
       {},
       qs,
     );
-    return response.contacts;
+    return convertNumericStrings(response.contacts);
   }
 }
 

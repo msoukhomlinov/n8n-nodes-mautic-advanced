@@ -138,6 +138,18 @@ export const contactOperations: INodeProperties[] = [
         description: 'Get activity events for all contacts',
         action: 'Get activity events for all contacts',
       },
+      {
+        name: 'Get Owners',
+        value: 'getOwners',
+        description: 'Get list of available owners',
+        action: 'Get list of available owners',
+      },
+      {
+        name: 'Get Fields',
+        value: 'getFields',
+        description: 'Get list of available contact fields',
+        action: 'Get list of available contact fields',
+      },
     ],
     default: 'create',
   },

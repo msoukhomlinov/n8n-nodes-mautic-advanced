@@ -7,7 +7,7 @@ import {
   getRequiredParam,
   handleApiError,
 } from '../utils/ApiHelpers';
-import { buildQueryFromOptions, wrapSingleItem } from '../utils/DataHelpers';
+import { buildQueryFromOptions, wrapSingleItem, convertNumericStrings } from '../utils/DataHelpers';
 
 // Public execute entry points
 export async function executeTagOperation(
@@ -209,7 +209,7 @@ async function updateTag(context: IExecuteFunctions, itemIndex: number): Promise
 async function getTag(context: IExecuteFunctions, itemIndex: number): Promise<any> {
   const tagId = getRequiredParam<string>(context, 'tagId', itemIndex);
   const response = await makeApiRequest(context, 'GET', `/tags/${tagId}`);
-  return response.tag;
+  return convertNumericStrings(response.tag);
 }
 
 async function getAllTags(context: IExecuteFunctions, itemIndex: number): Promise<any> {
@@ -220,11 +220,13 @@ async function getAllTags(context: IExecuteFunctions, itemIndex: number): Promis
   if (!qs.orderByDir) qs.orderByDir = 'asc';
   if (returnAll) {
     const limit = getOptionalParam<number | undefined>(context, 'limit', itemIndex, undefined);
-    return await makePaginatedRequest(context, 'tags', 'GET', '/tags', {}, qs, limit);
+    const result = await makePaginatedRequest(context, 'tags', 'GET', '/tags', {}, qs, limit);
+    return convertNumericStrings(result);
   } else {
     qs.limit = getOptionalParam<number>(context, 'limit', itemIndex, 30);
     const response = await makeApiRequest(context, 'GET', '/tags', {}, qs);
-    return response.tags ? Object.values(response.tags) : [];
+    const data = response.tags ? Object.values(response.tags) : [];
+    return convertNumericStrings(data);
   }
 }
 
@@ -250,19 +252,22 @@ async function createCategory(context: IExecuteFunctions, itemIndex: number): Pr
 
 async function updateCategory(context: IExecuteFunctions, itemIndex: number): Promise<any> {
   const categoryId = getRequiredParam<string>(context, 'categoryId', itemIndex);
+  const createIfNotFound = getOptionalParam<boolean>(context, 'createIfNotFound', itemIndex, false);
   const updateFields = getOptionalParam<IDataObject>(context, 'updateFields', itemIndex, {});
   const body: IDataObject = {};
   if (updateFields.title) body.title = updateFields.title as string;
   if (updateFields.description) body.description = updateFields.description as string;
   if (updateFields.color) body.color = updateFields.color as string;
-  const response = await makeApiRequest(context, 'PATCH', `/categories/${categoryId}/edit`, body);
+  if (updateFields.bundle) body.bundle = updateFields.bundle as string;
+  const method = createIfNotFound ? 'PUT' : 'PATCH';
+  const response = await makeApiRequest(context, method, `/categories/${categoryId}/edit`, body);
   return response.category;
 }
 
 async function getCategory(context: IExecuteFunctions, itemIndex: number): Promise<any> {
   const categoryId = getRequiredParam<string>(context, 'categoryId', itemIndex);
   const response = await makeApiRequest(context, 'GET', `/categories/${categoryId}`);
-  return response.category;
+  return convertNumericStrings(response.category);
 }
 
 async function getAllCategories(context: IExecuteFunctions, itemIndex: number): Promise<any> {
@@ -275,7 +280,8 @@ async function getAllCategories(context: IExecuteFunctions, itemIndex: number): 
   if (!returnAll) {
     limit = getOptionalParam<number>(context, 'limit', itemIndex, 30);
   }
-  return await makePaginatedRequest(context, 'categories', 'GET', '/categories', {}, qs, limit);
+  const result = await makePaginatedRequest(context, 'categories', 'GET', '/categories', {}, qs, limit);
+  return convertNumericStrings(result);
 }
 
 async function deleteCategory(context: IExecuteFunctions, itemIndex: number): Promise<any> {

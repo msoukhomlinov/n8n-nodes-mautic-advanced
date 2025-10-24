@@ -7,7 +7,7 @@ import {
   getOptionalParam,
   getRequiredParam,
 } from '../utils/ApiHelpers';
-import { buildQueryFromOptions, wrapSingleItem } from '../utils/DataHelpers';
+import { buildQueryFromOptions, wrapSingleItem, convertNumericStrings } from '../utils/DataHelpers';
 
 export async function executeFieldOperation(
   context: IExecuteFunctions,
@@ -191,7 +191,7 @@ async function getField(context: IExecuteFunctions, itemIndex: number): Promise<
 
   const endpoint = `/fields/${fieldObject}/${fieldId}`;
   const response = await makeApiRequest(context, 'GET', endpoint);
-  return response.field;
+  return convertNumericStrings(response.field);
 }
 
 async function getAllFields(context: IExecuteFunctions, itemIndex: number): Promise<any[]> {
@@ -203,7 +203,7 @@ async function getAllFields(context: IExecuteFunctions, itemIndex: number): Prom
   const query = buildQueryFromOptions(options);
 
   if (returnAll) {
-    return await makePaginatedRequest(
+    const result = await makePaginatedRequest(
       context,
       'fields',
       'GET',
@@ -211,10 +211,12 @@ async function getAllFields(context: IExecuteFunctions, itemIndex: number): Prom
       {},
       query,
     );
+    return convertNumericStrings(result);
   } else {
     query.limit = limit;
     const response = await makeApiRequest(context, 'GET', `/fields/${fieldObject}`, {}, query);
-    return Object.values(response.fields || {});
+    const data = Object.values(response.fields || {});
+    return convertNumericStrings(data);
   }
 }
 
