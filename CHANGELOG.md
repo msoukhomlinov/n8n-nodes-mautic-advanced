@@ -1,6 +1,16 @@
 # Changelog
 
 
+## [0.4.0] - 2025-10-26
+### Enhanced
+- **Segment Filter Types**: Enhanced segment filter field type selection from free-text input to dropdown with all 17 valid Mautic field types (boolean, date, datetime, email, country, locale, lookup, number, tel, region, select, multiselect, text, textarea, time, timezone, url)
+- **Segment Filter Operators**: Expanded segment filter operators to include all Mautic API operators:
+  - Added numeric comparison operators: `>`, `>=`, `<`, `<=`
+  - Added set operations: `in`, `!in`
+  - Added range operations: `between`, `!between`
+  - Total operators now: 18 operators covering all Mautic filter capabilities
+- **Segment Filter Display**: Added optional `display` field for segment filter display names as supported by the Mautic API
+
 ## [0.3.9] - 2025-10-24
 ### Fixed
 - **Numeric Field Types**: Fixed numeric fields (id, owner_id, points, etc.) being returned as strings instead of numbers in all get/getAll operations across all resources (Contact, Company, Campaign, Segment, Field, Notification, Tag, Category)
