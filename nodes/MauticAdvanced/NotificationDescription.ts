@@ -49,6 +49,25 @@ export const notificationOperations: INodeProperties[] = [
 
 export const notificationFields: INodeProperties[] = [
   /* -------------------------------------------------------------------------- */
+  /*                          notification:plugin warning                       */
+  /* -------------------------------------------------------------------------- */
+  {
+    displayName: '',
+    name: 'notificationPluginWarning',
+    type: 'notice',
+    displayOptions: {
+      show: {
+        resource: ['notification'],
+      },
+    },
+    typeOptions: {
+      noticeSeverity: 'warning',
+    },
+    default: '',
+    description:
+      'This resource requires the OneSignal plugin to be enabled and configured in Mautic.',
+  },
+  /* -------------------------------------------------------------------------- */
   /*                                notification:create                         */
   /* -------------------------------------------------------------------------- */
   {

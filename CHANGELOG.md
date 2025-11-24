@@ -9,6 +9,10 @@
 - **Contact Send Email**: Added support for custom tokens via key-value pairs UI
 - **Contact Send Email**: Added support for asset attachments
 
+### Enhanced
+- **Category Create/Update**: Converted bundle field to dropdown with all 13 Mautic bundle values and color field to color picker for improved UX
+- **Notification Resource**: Added warning notice indicating OneSignal plugin must be enabled and configured
+
 ## [0.4.0] - 2025-10-26
 ### Enhanced
 - **Segment Filter Types**: Enhanced segment filter field type selection from free-text input to dropdown with all 17 valid Mautic field types (boolean, date, datetime, email, country, locale, lookup, number, tel, region, select, multiselect, text, textarea, time, timezone, url)

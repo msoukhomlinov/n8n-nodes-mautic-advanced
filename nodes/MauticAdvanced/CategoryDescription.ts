@@ -63,12 +63,12 @@ export const categoryFields: INodeProperties[] = [
       },
     },
     default: '',
-    description: 'The title of the category to create',
+    description: 'The title or name of the category',
   },
   {
     displayName: 'Bundle',
     name: 'bundle',
-    type: 'string',
+    type: 'options',
     required: true,
     displayOptions: {
       show: {
@@ -76,8 +76,76 @@ export const categoryFields: INodeProperties[] = [
         operation: ['create'],
       },
     },
-    default: '',
-    description: 'The bundle where the category will be available',
+    options: [
+      {
+        name: 'Global',
+        value: 'global',
+        description: 'Available across all Mautic elements',
+      },
+      {
+        name: 'Asset',
+        value: 'asset',
+        description: 'For downloadable assets',
+      },
+      {
+        name: 'Campaign',
+        value: 'campaign',
+        description: 'For marketing campaigns',
+      },
+      {
+        name: 'Email',
+        value: 'email',
+        description: 'For email templates',
+      },
+      {
+        name: 'Focus Items',
+        value: 'plugin:focus',
+        description: 'For focus items',
+      },
+      {
+        name: 'Form',
+        value: 'form',
+        description: 'For forms',
+      },
+      {
+        name: 'Marketing Messages',
+        value: 'messages',
+        description: 'For marketing messages',
+      },
+      {
+        name: 'Page',
+        value: 'page',
+        description: 'For landing pages',
+      },
+      {
+        name: 'Point',
+        value: 'point',
+        description: 'For point actions',
+      },
+      {
+        name: 'Segment',
+        value: 'segment',
+        description: 'For contact segments',
+      },
+      {
+        name: 'Text Message',
+        value: 'sms',
+        description: 'For SMS/text messages',
+      },
+      {
+        name: 'Social Monitoring',
+        value: 'plugin:mauticSocial',
+        description: 'For social monitoring',
+      },
+      {
+        name: 'Stage',
+        value: 'stage',
+        description: 'For contact stages',
+      },
+    ],
+    default: 'global',
+    description:
+      'The bundle where the category will be available. Determines which Mautic elements can use this category',
   },
   {
     displayName: 'Description',
@@ -90,12 +158,12 @@ export const categoryFields: INodeProperties[] = [
       },
     },
     default: '',
-    description: 'The description of the category',
+    description: 'Optional description of the category to help identify its purpose',
   },
   {
     displayName: 'Color',
     name: 'color',
-    type: 'string',
+    type: 'color',
     displayOptions: {
       show: {
         resource: ['category'],
@@ -103,7 +171,7 @@ export const categoryFields: INodeProperties[] = [
       },
     },
     default: '',
-    description: 'The color of the category',
+    description: 'Color for visual organisation and identification of the category in Mautic',
   },
 
   /* -------------------------------------------------------------------------- */
@@ -154,28 +222,96 @@ export const categoryFields: INodeProperties[] = [
         name: 'title',
         type: 'string',
         default: '',
-        description: 'The new title of the category',
+        description: 'The new title or name of the category',
       },
       {
         displayName: 'Bundle',
         name: 'bundle',
-        type: 'string',
+        type: 'options',
         default: '',
-        description: 'The new bundle of the category',
+        options: [
+          {
+            name: 'Global',
+            value: 'global',
+            description: 'Available across all Mautic elements',
+          },
+          {
+            name: 'Asset',
+            value: 'asset',
+            description: 'For downloadable assets',
+          },
+          {
+            name: 'Campaign',
+            value: 'campaign',
+            description: 'For marketing campaigns',
+          },
+          {
+            name: 'Email',
+            value: 'email',
+            description: 'For email templates',
+          },
+          {
+            name: 'Focus Items',
+            value: 'plugin:focus',
+            description: 'For focus items',
+          },
+          {
+            name: 'Form',
+            value: 'form',
+            description: 'For forms',
+          },
+          {
+            name: 'Marketing Messages',
+            value: 'messages',
+            description: 'For marketing messages',
+          },
+          {
+            name: 'Page',
+            value: 'page',
+            description: 'For landing pages',
+          },
+          {
+            name: 'Point',
+            value: 'point',
+            description: 'For point actions',
+          },
+          {
+            name: 'Segment',
+            value: 'segment',
+            description: 'For contact segments',
+          },
+          {
+            name: 'Text Message',
+            value: 'sms',
+            description: 'For SMS/text messages',
+          },
+          {
+            name: 'Social Monitoring',
+            value: 'plugin:mauticSocial',
+            description: 'For social monitoring',
+          },
+          {
+            name: 'Stage',
+            value: 'stage',
+            description: 'For contact stages',
+          },
+        ],
+        description:
+          'The bundle where the category will be available. Determines which Mautic elements can use this category',
       },
       {
         displayName: 'Description',
         name: 'description',
         type: 'string',
         default: '',
-        description: 'The new description of the category',
+        description: 'Optional description of the category to help identify its purpose',
       },
       {
         displayName: 'Color',
         name: 'color',
-        type: 'string',
+        type: 'color',
         default: '',
-        description: 'The new color of the category',
+        description: 'Color for visual organisation and identification of the category in Mautic',
       },
     ],
   },

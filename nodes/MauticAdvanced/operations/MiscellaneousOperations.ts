@@ -245,7 +245,11 @@ async function createCategory(context: IExecuteFunctions, itemIndex: number): Pr
   const description = getOptionalParam<string>(context, 'description', itemIndex, '');
   if (description) body.description = description;
   const color = getOptionalParam<string>(context, 'color', itemIndex, '');
-  if (color) body.color = color;
+  if (color) {
+    // Mautic API expects hex color without # prefix (e.g., "b36262")
+    // n8n color picker returns with # prefix, so we strip it if present
+    body.color = color.startsWith('#') ? color.substring(1) : color;
+  }
   const response = await makeApiRequest(context, 'POST', '/categories/new', body);
   return response.category;
 }
@@ -257,7 +261,12 @@ async function updateCategory(context: IExecuteFunctions, itemIndex: number): Pr
   const body: IDataObject = {};
   if (updateFields.title) body.title = updateFields.title as string;
   if (updateFields.description) body.description = updateFields.description as string;
-  if (updateFields.color) body.color = updateFields.color as string;
+  if (updateFields.color) {
+    // Mautic API expects hex color without # prefix (e.g., "b36262")
+    // n8n color picker returns with # prefix, so we strip it if present
+    const color = updateFields.color as string;
+    body.color = color.startsWith('#') ? color.substring(1) : color;
+  }
   if (updateFields.bundle) body.bundle = updateFields.bundle as string;
   const method = createIfNotFound ? 'PUT' : 'PATCH';
   const response = await makeApiRequest(context, method, `/categories/${categoryId}/edit`, body);
@@ -280,7 +289,15 @@ async function getAllCategories(context: IExecuteFunctions, itemIndex: number): 
   if (!returnAll) {
     limit = getOptionalParam<number>(context, 'limit', itemIndex, 30);
   }
-  const result = await makePaginatedRequest(context, 'categories', 'GET', '/categories', {}, qs, limit);
+  const result = await makePaginatedRequest(
+    context,
+    'categories',
+    'GET',
+    '/categories',
+    {},
+    qs,
+    limit,
+  );
   return convertNumericStrings(result);
 }
 
