@@ -1755,6 +1755,58 @@ export const contactFields: INodeProperties[] = [
     },
     default: '',
   },
+  {
+    displayName: 'Tokens',
+    name: 'tokensUi',
+    type: 'fixedCollection',
+    typeOptions: {
+      multipleValues: true,
+    },
+    placeholder: 'Add Token',
+    description: 'Custom tokens to pass to the email template. These will be available as {token_name} in your email template.',
+    default: {},
+    displayOptions: {
+      show: {
+        resource: ['contact'],
+        operation: ['sendEmail'],
+      },
+    },
+    options: [
+      {
+        name: 'tokenValues',
+        displayName: 'Token',
+        values: [
+          {
+            displayName: 'Token Name',
+            name: 'tokenKey',
+            type: 'string',
+            default: '',
+            description: 'The token name (e.g., "order_id", "customer_name")',
+          },
+          {
+            displayName: 'Token Value',
+            name: 'tokenValue',
+            type: 'string',
+            default: '',
+            description: 'The token value (e.g., "12345", "John")',
+          },
+        ],
+      },
+    ],
+  },
+  {
+    displayName: 'Asset Attachments',
+    name: 'assetAttachments',
+    type: 'string',
+    description: 'Comma-separated list of asset IDs to attach to the email',
+    default: '',
+    displayOptions: {
+      show: {
+        resource: ['contact'],
+        operation: ['sendEmail'],
+      },
+    },
+  },
 
   /* -------------------------------------------------------------------------- */
   /*                                contact:getNotes                            */

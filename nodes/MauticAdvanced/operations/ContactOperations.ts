@@ -254,11 +254,42 @@ async function deleteContact(context: IExecuteFunctions, itemIndex: number): Pro
 
 async function sendEmailToContact(context: IExecuteFunctions, itemIndex: number): Promise<any> {
   const contactId = getRequiredParam(context, 'contactId', itemIndex);
-  const emailId = getRequiredParam(context, 'emailId', itemIndex);
+  const emailId = getRequiredParam(context, 'campaignEmailId', itemIndex);
+  const tokensUi = getOptionalParam(context, 'tokensUi', itemIndex, {}) as any;
+  const assetAttachments = getOptionalParam(context, 'assetAttachments', itemIndex, '') as string;
+
+  // Build request body
+  const body: any = {};
+
+  // Process tokens from key-value pairs UI
+  if (tokensUi?.tokenValues && Array.isArray(tokensUi.tokenValues)) {
+    const tokens: any = {};
+    for (const tokenItem of tokensUi.tokenValues) {
+      if (tokenItem.tokenKey && tokenItem.tokenValue !== undefined) {
+        tokens[tokenItem.tokenKey] = tokenItem.tokenValue;
+      }
+    }
+    if (Object.keys(tokens).length > 0) {
+      body.tokens = tokens;
+    }
+  }
+
+  // Process asset attachments
+  if (assetAttachments && assetAttachments.trim()) {
+    body.assetAttachments = assetAttachments
+      .split(',')
+      .map((id) => id.trim())
+      .filter((id) => id.length > 0);
+  }
+
+  // Only send body if it has content
+  const requestBody = Object.keys(body).length > 0 ? body : {};
+
   const response = await makeApiRequest(
     context,
     'POST',
     `/emails/${emailId}/contact/${contactId}/send`,
+    requestBody,
   );
   return response;
 }

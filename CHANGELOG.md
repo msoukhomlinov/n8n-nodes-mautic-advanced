@@ -1,6 +1,14 @@
 # Changelog
 
 
+## [0.4.1] - 2025-11-25
+### Fixed
+- **Contact Send Email**: Fixed parameter name mismatch (`campaignEmailId` vs `emailId`) preventing email sending
+
+### Added
+- **Contact Send Email**: Added support for custom tokens via key-value pairs UI
+- **Contact Send Email**: Added support for asset attachments
+
 ## [0.4.0] - 2025-10-26
 ### Enhanced
 - **Segment Filter Types**: Enhanced segment filter field type selection from free-text input to dropdown with all 17 valid Mautic field types (boolean, date, datetime, email, country, locale, lookup, number, tel, region, select, multiselect, text, textarea, time, timezone, url)
