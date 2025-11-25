@@ -123,18 +123,18 @@ export const tagFields: INodeProperties[] = [
     },
     options: [
       {
-        displayName: 'Tag',
-        name: 'tag',
-        type: 'string',
-        default: '',
-        description: 'The new name of the tag',
-      },
-      {
         displayName: 'Description',
         name: 'description',
         type: 'string',
         default: '',
         description: 'The new description of the tag',
+      },
+      {
+        displayName: 'Tag',
+        name: 'tag',
+        type: 'string',
+        default: '',
+        description: 'The new name of the tag',
       },
     ],
   },
@@ -204,13 +204,6 @@ export const tagFields: INodeProperties[] = [
     },
     options: [
       {
-        displayName: 'Search',
-        name: 'search',
-        type: 'string',
-        default: '',
-        description: 'String or search command to filter tags by.',
-      },
-      {
         displayName: 'Order By',
         name: 'orderBy',
         type: 'string',
@@ -240,6 +233,13 @@ export const tagFields: INodeProperties[] = [
         type: 'boolean',
         default: false,
         description: 'Whether to return only currently published entities',
+      },
+      {
+        displayName: 'Search',
+        name: 'search',
+        type: 'string',
+        default: '',
+        description: 'String or search command to filter tags by.',
       },
     ],
   },

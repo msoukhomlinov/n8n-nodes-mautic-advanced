@@ -13,10 +13,12 @@ import { executeCampaignOperation } from './operations/CampaignOperations';
 import { executeFieldOperation } from './operations/FieldOperations';
 import { executeNotificationOperation } from './operations/NotificationOperations';
 import { executeSegmentOperation } from './operations/SegmentOperations';
+import { executeEmailOperation } from './operations/EmailOperations';
+import { executeThemeOperation } from './operations/ThemeOperations';
 import {
   executeTagOperation,
   executeCategoryOperation,
-  executeEmailOperation,
+  executeSegmentEmailOperation,
   executeContactSegmentOperation,
   executeCampaignContactOperation,
   executeCompanyContactOperation,
@@ -29,12 +31,14 @@ import { companyContactFields, companyContactOperations } from './CompanyContact
 import { companyFields, companyOperations } from './CompanyDescription';
 import { contactFields, contactOperations } from './ContactDescription';
 import { contactSegmentFields, contactSegmentOperations } from './ContactSegmentDescription';
+import { emailFields, emailOperations } from './EmailDescription';
 import { fieldFields, fieldOperations } from './FieldDescription';
-import { mauticApiRequestAllItems } from './GenericFunctions';
+import { mauticApiRequest, mauticApiRequestAllItems } from './GenericFunctions';
 import { notificationFields, notificationOperations } from './NotificationDescription';
 import { segmentEmailFields, segmentEmailOperations } from './SegmentEmailDescription';
 import { segmentFields, segmentOperations } from './SegmentDescription';
 import { tagFields, tagOperations } from './TagDescription';
+import { themeFields, themeOperations } from './ThemeDescription';
 
 export class MauticAdvanced implements INodeType {
   description: INodeTypeDescription = {
@@ -130,6 +134,11 @@ export class MauticAdvanced implements INodeType {
             description: 'Add/remove contacts to/from a segment',
           },
           {
+            name: 'Email',
+            value: 'email',
+            description: 'Create, update, and retrieve emails',
+          },
+          {
             name: 'Field',
             value: 'field',
             description: 'Manage custom fields for contacts and companies',
@@ -154,6 +163,11 @@ export class MauticAdvanced implements INodeType {
             value: 'tag',
             description: 'Create, update, and retrieve tags',
           },
+          {
+            name: 'Theme',
+            value: 'theme',
+            description: 'Create, update, and retrieve themes',
+          },
         ],
         default: 'contact',
       },
@@ -169,6 +183,8 @@ export class MauticAdvanced implements INodeType {
       ...campaignContactFields,
       ...companyContactOperations,
       ...companyContactFields,
+      ...emailOperations,
+      ...emailFields,
       ...fieldOperations,
       ...fieldFields,
       ...notificationOperations,
@@ -181,6 +197,8 @@ export class MauticAdvanced implements INodeType {
       ...categoryFields,
       ...segmentOperations,
       ...segmentFields,
+      ...themeOperations,
+      ...themeFields,
     ],
   };
 
@@ -353,6 +371,67 @@ export class MauticAdvanced implements INodeType {
         }
         return returnData;
       },
+      // Get all the available email categories to display them to user so that they can
+      // select them easily
+      async getEmailCategories(this: ILoadOptionsFunctions): Promise<INodePropertyOptions[]> {
+        const returnData: INodePropertyOptions[] = [];
+        const categories = await mauticApiRequestAllItems.call(
+          this,
+          'categories',
+          'GET',
+          '/categories',
+        );
+        for (const category of categories) {
+          // Filter for email bundle categories
+          if (category.bundle === 'email' || category.bundle === 'global') {
+            returnData.push({
+              name: category.title,
+              value: category.id,
+            });
+          }
+        }
+        return returnData;
+      },
+      // Get all the available forms to display them to user so that they can
+      // select them easily
+      async getForms(this: ILoadOptionsFunctions): Promise<INodePropertyOptions[]> {
+        const returnData: INodePropertyOptions[] = [];
+        const forms = await mauticApiRequestAllItems.call(this, 'forms', 'GET', '/forms');
+        for (const form of forms) {
+          returnData.push({
+            name: form.name,
+            value: form.id,
+          });
+        }
+        return returnData;
+      },
+      // Get all the available assets to display them to user so that they can
+      // select them easily
+      async getAssets(this: ILoadOptionsFunctions): Promise<INodePropertyOptions[]> {
+        const returnData: INodePropertyOptions[] = [];
+        const assets = await mauticApiRequestAllItems.call(this, 'assets', 'GET', '/assets');
+        for (const asset of assets) {
+          returnData.push({
+            name: asset.title,
+            value: asset.id,
+          });
+        }
+        return returnData;
+      },
+      // Get all the available themes to display them to user so that they can
+      // select them easily
+      async getThemes(this: ILoadOptionsFunctions): Promise<INodePropertyOptions[]> {
+        const returnData: INodePropertyOptions[] = [];
+        const response = await mauticApiRequest.call(this, 'GET', '/themes');
+        const themes = response.themes || {};
+        for (const themeName of Object.keys(themes)) {
+          returnData.push({
+            name: themeName,
+            value: themeName,
+          });
+        }
+        return returnData;
+      },
     },
   };
 
@@ -385,8 +464,11 @@ export class MauticAdvanced implements INodeType {
           case 'category':
             result = await executeCategoryOperation(this, operation, i);
             break;
-          case 'segmentEmail':
+          case 'email':
             result = await executeEmailOperation(this, operation, i);
+            break;
+          case 'segmentEmail':
+            result = await executeSegmentEmailOperation(this, operation, i);
             break;
           case 'contactSegment':
             result = await executeContactSegmentOperation(this, operation, i);
@@ -402,6 +484,9 @@ export class MauticAdvanced implements INodeType {
             break;
           case 'notification':
             result = await executeNotificationOperation(this, operation, i);
+            break;
+          case 'theme':
+            result = await executeThemeOperation(this, operation, i);
             break;
           default:
             throw new NodeOperationError(

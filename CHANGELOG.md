@@ -1,6 +1,17 @@
 # Changelog
 
 
+## [0.5.0] - 2025-11-25
+### Added
+- **Theme Resource**: Added full CRUD operations for theme management (get, getAll, create, delete) with binary file support for zip uploads and downloads
+- **Email Resource**: Added full CRUD operations for email management (create, get, getAll, update, delete)
+- **Email Create Reply**: Added operation to create reply records for email send stats
+- **Email UX Enhancements**: Added option loaders for categories, forms, assets, and themes to improve user experience
+- **Email Theme Selection**: Replaced Template string input with Theme optionLoader picklist in email create and update operations
+
+### Enhanced
+- **Option Picklists**: Alphabetically sorted all option picklists (Additional Fields, Update Fields, Options) across all resources for improved usability
+
 ## [0.4.1] - 2025-11-25
 ### Fixed
 - **Contact Send Email**: Fixed parameter name mismatch (`campaignEmailId` vs `emailId`) preventing email sending

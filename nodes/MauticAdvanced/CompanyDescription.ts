@@ -228,7 +228,6 @@ export const companyFields: INodeProperties[] = [
         type: 'number',
         default: 0,
       },
-
       {
         displayName: 'Overwrite With Blank',
         name: 'overwriteWithBlank',
@@ -437,7 +436,6 @@ export const companyFields: INodeProperties[] = [
         type: 'number',
         default: 0,
       },
-
       {
         displayName: 'Overwrite With Blank',
         name: 'overwriteWithBlank',
@@ -551,6 +549,17 @@ export const companyFields: INodeProperties[] = [
     },
     options: [
       {
+        displayName: 'Order By Name or ID',
+        name: 'orderBy',
+        type: 'options',
+        typeOptions: {
+          loadOptionsMethod: 'getCompanyFields',
+        },
+        default: '',
+        description:
+          'Column to sort by. Can use any column listed in the response. Choose from the list, or specify an ID using an <a href="https://docs.n8n.io/code/expressions/">expression</a>.',
+      },
+      {
         displayName: 'Order Direction',
         name: 'orderByDir',
         type: 'options',
@@ -566,17 +575,6 @@ export const companyFields: INodeProperties[] = [
         ],
         default: '',
         description: 'Sort direction: asc or desc',
-      },
-      {
-        displayName: 'Order By Name or ID',
-        name: 'orderBy',
-        type: 'options',
-        typeOptions: {
-          loadOptionsMethod: 'getCompanyFields',
-        },
-        default: '',
-        description:
-          'Column to sort by. Can use any column listed in the response. Choose from the list, or specify an ID using an <a href="https://docs.n8n.io/code/expressions/">expression</a>.',
       },
       {
         displayName: 'Search',

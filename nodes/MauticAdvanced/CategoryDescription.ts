@@ -218,13 +218,6 @@ export const categoryFields: INodeProperties[] = [
     },
     options: [
       {
-        displayName: 'Title',
-        name: 'title',
-        type: 'string',
-        default: '',
-        description: 'The new title or name of the category',
-      },
-      {
         displayName: 'Bundle',
         name: 'bundle',
         type: 'options',
@@ -300,6 +293,13 @@ export const categoryFields: INodeProperties[] = [
           'The bundle where the category will be available. Determines which Mautic elements can use this category',
       },
       {
+        displayName: 'Color',
+        name: 'color',
+        type: 'color',
+        default: '',
+        description: 'Color for visual organisation and identification of the category in Mautic',
+      },
+      {
         displayName: 'Description',
         name: 'description',
         type: 'string',
@@ -307,11 +307,11 @@ export const categoryFields: INodeProperties[] = [
         description: 'Optional description of the category to help identify its purpose',
       },
       {
-        displayName: 'Color',
-        name: 'color',
-        type: 'color',
+        displayName: 'Title',
+        name: 'title',
+        type: 'string',
         default: '',
-        description: 'Color for visual organisation and identification of the category in Mautic',
+        description: 'The new title or name of the category',
       },
     ],
   },
@@ -381,11 +381,11 @@ export const categoryFields: INodeProperties[] = [
     },
     options: [
       {
-        displayName: 'Search',
-        name: 'search',
-        type: 'string',
-        default: '',
-        description: 'String or search command to filter categories by.',
+        displayName: 'Minimal',
+        name: 'minimal',
+        type: 'boolean',
+        default: false,
+        description: 'Whether to return a minimal set of data',
       },
       {
         displayName: 'Order By',
@@ -419,11 +419,11 @@ export const categoryFields: INodeProperties[] = [
         description: 'Whether to return only currently published entities',
       },
       {
-        displayName: 'Minimal',
-        name: 'minimal',
-        type: 'boolean',
-        default: false,
-        description: 'Whether to return a minimal set of data',
+        displayName: 'Search',
+        name: 'search',
+        type: 'string',
+        default: '',
+        description: 'String or search command to filter categories by.',
       },
     ],
   },

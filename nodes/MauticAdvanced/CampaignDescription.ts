@@ -91,6 +91,13 @@ export const campaignFields: INodeProperties[] = [
     placeholder: 'Add Field',
     options: [
       {
+        displayName: 'Alias',
+        name: 'alias',
+        type: 'string',
+        default: '',
+        description: 'Used to generate the URL for the campaign',
+      },
+      {
         displayName: 'Description',
         name: 'description',
         type: 'string',
@@ -117,13 +124,6 @@ export const campaignFields: INodeProperties[] = [
         type: 'dateTime',
         default: '',
         description: 'Date/time when the campaign should be published',
-      },
-      {
-        displayName: 'Alias',
-        name: 'alias',
-        type: 'string',
-        default: '',
-        description: 'Used to generate the URL for the campaign',
       },
     ],
   },
@@ -170,6 +170,13 @@ export const campaignFields: INodeProperties[] = [
     placeholder: 'Add Field',
     options: [
       {
+        displayName: 'Alias',
+        name: 'alias',
+        type: 'string',
+        default: '',
+        description: 'Used to generate the URL for the campaign',
+      },
+      {
         displayName: 'Description',
         name: 'description',
         type: 'string',
@@ -177,18 +184,18 @@ export const campaignFields: INodeProperties[] = [
         description: 'Description of the campaign',
       },
       {
-        displayName: 'Name',
-        name: 'name',
-        type: 'string',
-        default: '',
-        description: 'Name of the campaign',
-      },
-      {
         displayName: 'Is Published',
         name: 'isPublished',
         type: 'boolean',
         default: false,
         description: 'Whether the campaign is published',
+      },
+      {
+        displayName: 'Name',
+        name: 'name',
+        type: 'string',
+        default: '',
+        description: 'Name of the campaign',
       },
       {
         displayName: 'Publish Down',
@@ -203,13 +210,6 @@ export const campaignFields: INodeProperties[] = [
         type: 'dateTime',
         default: '',
         description: 'Date/time when the campaign should be published',
-      },
-      {
-        displayName: 'Alias',
-        name: 'alias',
-        type: 'string',
-        default: '',
-        description: 'Used to generate the URL for the campaign',
       },
     ],
   },

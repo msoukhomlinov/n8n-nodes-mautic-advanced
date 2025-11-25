@@ -108,18 +108,6 @@ export const segmentFields: INodeProperties[] = [
         default: '',
       },
       {
-        displayName: 'Is Published',
-        name: 'isPublished',
-        type: 'boolean',
-        default: true,
-      },
-      {
-        displayName: 'Is Global',
-        name: 'isGlobal',
-        type: 'boolean',
-        default: false,
-      },
-      {
         displayName: 'Filters',
         name: 'filters',
         type: 'fixedCollection',
@@ -228,6 +216,18 @@ export const segmentFields: INodeProperties[] = [
           },
         ],
       },
+      {
+        displayName: 'Is Global',
+        name: 'isGlobal',
+        type: 'boolean',
+        default: false,
+      },
+      {
+        displayName: 'Is Published',
+        name: 'isPublished',
+        type: 'boolean',
+        default: true,
+      },
     ],
   },
 
@@ -325,11 +325,10 @@ export const segmentFields: INodeProperties[] = [
     },
     options: [
       {
-        displayName: 'Search',
-        name: 'search',
-        type: 'string',
-        default: '',
-        description: 'String or search command to filter entities by',
+        displayName: 'Minimal',
+        name: 'minimal',
+        type: 'boolean',
+        default: false,
       },
       {
         displayName: 'Order By',
@@ -354,10 +353,11 @@ export const segmentFields: INodeProperties[] = [
         default: false,
       },
       {
-        displayName: 'Minimal',
-        name: 'minimal',
-        type: 'boolean',
-        default: false,
+        displayName: 'Search',
+        name: 'search',
+        type: 'string',
+        default: '',
+        description: 'String or search command to filter entities by',
       },
     ],
   },

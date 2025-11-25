@@ -82,7 +82,7 @@ export async function executeCategoryOperation(
   }
 }
 
-export async function executeEmailOperation(
+export async function executeSegmentEmailOperation(
   context: IExecuteFunctions,
   operation: string,
   i: number,
@@ -96,13 +96,13 @@ export async function executeEmailOperation(
       default:
         throw new NodeOperationError(
           context.getNode(),
-          `Operation '${operation}' is not supported for Email resource.`,
+          `Operation '${operation}' is not supported for Segment Email resource.`,
           { itemIndex: i },
         );
     }
     return context.helpers.returnJsonArray(wrapSingleItem(responseData));
   } catch (error) {
-    return handleApiError(context, error, operation, 'Email');
+    return handleApiError(context, error, operation, 'Segment Email');
   }
 }
 
