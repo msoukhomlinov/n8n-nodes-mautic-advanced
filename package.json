@@ -29,7 +29,8 @@
   },
   "main": "dist/nodes/MauticAdvanced/MauticAdvanced.node.js",
   "scripts": {
-    "build": "tsc && gulp build:icons",
+    "clean": "rimraf dist",
+    "build": "npm run clean && tsc && gulp build:icons",
     "dev": "tsc --watch",
     "format": "prettier --write nodes credentials",
     "lint": "eslint nodes credentials --ext .js,.ts",
@@ -60,6 +61,7 @@
     "gulp": "^4.0.2",
     "n8n-workflow": "^1.70.0",
     "prettier": "^3.2.5",
+    "rimraf": "^3.0.2",
     "typescript": "~4.8.4"
   },
   "dependencies": {
