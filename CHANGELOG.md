@@ -1,6 +1,10 @@
 # Changelog
 
 
+## [0.5.2] - 2025-11-27
+### Fixed
+- **Package installation**: Added package clean to as part of the build.
+
 ## [0.5.1] - 2025-11-27
 ### Fixed
 - **Case Sensitivity**: Fixed icon file references to use lowercase `mauticadvanced.svg` for Linux compatibility (case-sensitive file systems)
