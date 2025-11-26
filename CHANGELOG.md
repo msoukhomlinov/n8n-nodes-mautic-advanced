@@ -1,6 +1,10 @@
 # Changelog
 
 
+## [0.5.1] - 2025-11-27
+### Fixed
+- **Case Sensitivity**: Fixed icon file references to use lowercase `mauticadvanced.svg` for Linux compatibility (case-sensitive file systems)
+
 ## [0.5.0] - 2025-11-25
 ### Added
 - **Theme Resource**: Added full CRUD operations for theme management (get, getAll, create, delete) with binary file support for zip uploads and downloads
