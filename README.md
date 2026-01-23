@@ -125,6 +125,24 @@ This enhanced version extends the standard n8n Mautic node with:
 ### 📧 Email Operations
 - **Segment Email**: Send emails to segments
 
+### 👤 Users
+- **Create** a new Mautic user (administrator) with role, password, and profile fields
+- **Get** a user by ID
+- **Get Many** users with basic filtering and pagination
+- **Update** user details including role, profile fields, and password
+- **Delete** a user
+
+### 🔐 Roles
+- **Create** a new role with name, description, and permissions
+- **Get** a role by ID
+- **Get Many** roles with filtering and pagination
+- **Update** role details including permissions
+- **Delete** a role
+
+### 📈 Stats
+- **Get Available Tables** to list all statistical tables and their columns
+- **Get Stats** from a specific table with filtering, ordering, and pagination
+
 ## Installation
 
 ### Method 1: npm (Recommended)

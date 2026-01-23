@@ -1,6 +1,12 @@
 # Changelog
 
 
+## [0.6.0] - 2026-01-23
+### Added
+- **Users Resource**: Added full CRUD support for Mautic Users (administrators) including create, get, get many, update, and delete operations with role, password, and profile field handling.
+- **Roles Resource**: Added full CRUD support for Mautic Roles including create, get, get many, update, and delete operations with permissions management via rawPermissions JSON.
+- **Stats Resource**: Added support for Mautic Stats endpoint with operations to list available statistical tables and retrieve data from any table with filtering, ordering, and pagination support.
+
 ## [0.5.2] - 2025-11-27
 ### Fixed
 - **Package installation**: Added package clean to as part of the build.

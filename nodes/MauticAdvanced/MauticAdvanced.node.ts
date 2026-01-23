@@ -23,7 +23,9 @@ import {
   executeCampaignContactOperation,
   executeCompanyContactOperation,
 } from './operations/MiscellaneousOperations';
-
+import { executeUserOperation } from './operations/UserOperations';
+import { executeRoleOperation } from './operations/RoleOperations';
+import { executeStatsOperation } from './operations/StatsOperations';
 import { campaignContactFields, campaignContactOperations } from './CampaignContactDescription';
 import { campaignFields, campaignOperations } from './CampaignDescription';
 import { categoryFields, categoryOperations } from './CategoryDescription';
@@ -39,6 +41,9 @@ import { segmentEmailFields, segmentEmailOperations } from './SegmentEmailDescri
 import { segmentFields, segmentOperations } from './SegmentDescription';
 import { tagFields, tagOperations } from './TagDescription';
 import { themeFields, themeOperations } from './ThemeDescription';
+import { userFields, userOperations } from './UserDescription';
+import { roleFields, roleOperations } from './RoleDescription';
+import { statsFields, statsOperations } from './StatsDescription';
 
 export class MauticAdvanced implements INodeType {
   description: INodeTypeDescription = {
@@ -149,6 +154,11 @@ export class MauticAdvanced implements INodeType {
             description: 'Create, update, and retrieve notifications',
           },
           {
+            name: 'Role',
+            value: 'role',
+            description: 'Create, update, and retrieve roles',
+          },
+          {
             name: 'Segment',
             value: 'segment',
             description: 'Create, update, and retrieve segments',
@@ -159,6 +169,11 @@ export class MauticAdvanced implements INodeType {
             description: 'Send an email',
           },
           {
+            name: 'Stats',
+            value: 'stats',
+            description: 'Get statistical data from Mautic tables',
+          },
+          {
             name: 'Tag',
             value: 'tag',
             description: 'Create, update, and retrieve tags',
@@ -167,6 +182,11 @@ export class MauticAdvanced implements INodeType {
             name: 'Theme',
             value: 'theme',
             description: 'Create, update, and retrieve themes',
+          },
+          {
+            name: 'User',
+            value: 'user',
+            description: 'Create, update, and retrieve users',
           },
         ],
         default: 'contact',
@@ -199,6 +219,12 @@ export class MauticAdvanced implements INodeType {
       ...segmentFields,
       ...themeOperations,
       ...themeFields,
+      ...userOperations,
+      ...userFields,
+      ...roleOperations,
+      ...roleFields,
+      ...statsOperations,
+      ...statsFields,
     ],
   };
 
@@ -487,6 +513,15 @@ export class MauticAdvanced implements INodeType {
             break;
           case 'theme':
             result = await executeThemeOperation(this, operation, i);
+            break;
+          case 'user':
+            result = await executeUserOperation(this, operation, i);
+            break;
+          case 'role':
+            result = await executeRoleOperation(this, operation, i);
+            break;
+          case 'stats':
+            result = await executeStatsOperation(this, operation, i);
             break;
           default:
             throw new NodeOperationError(
