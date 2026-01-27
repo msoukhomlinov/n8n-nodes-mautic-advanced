@@ -7,7 +7,12 @@ import {
   getRequiredParam,
   handleApiError,
 } from '../utils/ApiHelpers';
-import { buildQueryFromOptions, processBatchIds, wrapSingleItem, convertNumericStrings } from '../utils/DataHelpers';
+import {
+  buildQueryFromOptions,
+  processBatchIds,
+  wrapSingleItem,
+  convertNumericStrings,
+} from '../utils/DataHelpers';
 
 export async function executeSegmentOperation(
   context: IExecuteFunctions,

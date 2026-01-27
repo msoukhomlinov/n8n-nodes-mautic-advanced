@@ -8,6 +8,19 @@ import {
   handleApiError,
 } from '../utils/ApiHelpers';
 import { buildQueryFromOptions, wrapSingleItem, convertNumericStrings } from '../utils/DataHelpers';
+import {
+  createTagV1,
+  updateTagV1,
+  getTagV1,
+  getAllTagsV1,
+  deleteTagV1,
+  createTagV2,
+  updateTagV2,
+  getTagV2,
+  getAllTagsV2,
+  deleteTagV2,
+  getMauticVersion,
+} from './TagOperations';
 
 // Public execute entry points
 export async function executeTagOperation(
@@ -16,22 +29,25 @@ export async function executeTagOperation(
   i: number,
 ): Promise<INodeExecutionData[]> {
   try {
+    const mauticVersion = await getMauticVersion(context);
+    const useV2Tags = mauticVersion === 'v7';
+
     let responseData: any;
     switch (operation) {
       case 'create':
-        responseData = await createTag(context, i);
+        responseData = useV2Tags ? await createTagV2(context, i) : await createTagV1(context, i);
         break;
       case 'update':
-        responseData = await updateTag(context, i);
+        responseData = useV2Tags ? await updateTagV2(context, i) : await updateTagV1(context, i);
         break;
       case 'get':
-        responseData = await getTag(context, i);
+        responseData = useV2Tags ? await getTagV2(context, i) : await getTagV1(context, i);
         break;
       case 'getAll':
-        responseData = await getAllTags(context, i);
+        responseData = useV2Tags ? await getAllTagsV2(context, i) : await getAllTagsV1(context, i);
         break;
       case 'delete':
-        responseData = await deleteTag(context, i);
+        responseData = useV2Tags ? await deleteTagV2(context, i) : await deleteTagV1(context, i);
         break;
       default:
         throw new NodeOperationError(
@@ -185,55 +201,6 @@ export async function executeCompanyContactOperation(
   } catch (error) {
     return handleApiError(context, error, operation, 'Company Contact');
   }
-}
-
-// Tag operations
-async function createTag(context: IExecuteFunctions, itemIndex: number): Promise<any> {
-  const tag = getRequiredParam<string>(context, 'tag', itemIndex);
-  const body: IDataObject = { tag };
-  const response = await makeApiRequest(context, 'POST', '/tags/new', body);
-  return response.tag;
-}
-
-async function updateTag(context: IExecuteFunctions, itemIndex: number): Promise<any> {
-  const tagId = getRequiredParam<string>(context, 'tagId', itemIndex);
-  const createIfNotFound = getOptionalParam<boolean>(context, 'createIfNotFound', itemIndex, false);
-  const updateFields = getOptionalParam<IDataObject>(context, 'updateFields', itemIndex, {});
-  const body: IDataObject = {};
-  if (updateFields.tag) body.tag = updateFields.tag as string;
-  const method = createIfNotFound ? 'PUT' : 'PATCH';
-  const response = await makeApiRequest(context, method, `/tags/${tagId}/edit`, body);
-  return response.tag;
-}
-
-async function getTag(context: IExecuteFunctions, itemIndex: number): Promise<any> {
-  const tagId = getRequiredParam<string>(context, 'tagId', itemIndex);
-  const response = await makeApiRequest(context, 'GET', `/tags/${tagId}`);
-  return convertNumericStrings(response.tag);
-}
-
-async function getAllTags(context: IExecuteFunctions, itemIndex: number): Promise<any> {
-  const returnAll = getOptionalParam<boolean>(context, 'returnAll', itemIndex, false);
-  const options = getOptionalParam<IDataObject>(context, 'options', itemIndex, {});
-  const qs = buildQueryFromOptions(options);
-  if (!qs.orderBy) qs.orderBy = 'id';
-  if (!qs.orderByDir) qs.orderByDir = 'asc';
-  if (returnAll) {
-    const limit = getOptionalParam<number | undefined>(context, 'limit', itemIndex, undefined);
-    const result = await makePaginatedRequest(context, 'tags', 'GET', '/tags', {}, qs, limit);
-    return convertNumericStrings(result);
-  } else {
-    qs.limit = getOptionalParam<number>(context, 'limit', itemIndex, 30);
-    const response = await makeApiRequest(context, 'GET', '/tags', {}, qs);
-    const data = response.tags ? Object.values(response.tags) : [];
-    return convertNumericStrings(data);
-  }
-}
-
-async function deleteTag(context: IExecuteFunctions, itemIndex: number): Promise<any> {
-  const tagId = getRequiredParam<string>(context, 'tagId', itemIndex);
-  const response = await makeApiRequest(context, 'DELETE', `/tags/${tagId}/delete`);
-  return response.tag ?? { success: true };
 }
 
 // Category operations

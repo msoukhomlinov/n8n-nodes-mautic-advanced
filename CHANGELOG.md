@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.7.0] - 2026-01-27
+### Added
+- **Mautic Version Selector**: Added a `Mautic Version` option to Mautic Advanced credentials (v6 or lower / v7 or higher, default v6) so API calls can be routed to the appropriate endpoints.
+
+### Fixed
+- **Tag Descriptions (v7+)**: Tag create/update operations now use Mautic v2 tag endpoints when credentials are set to v7 or higher, allowing tag descriptions to be created and updated correctly. For Mautic v6 or lower, tag descriptions remain unsupported by the API and are ignored.
+
 
 ## [0.6.0] - 2026-01-23
 ### Added

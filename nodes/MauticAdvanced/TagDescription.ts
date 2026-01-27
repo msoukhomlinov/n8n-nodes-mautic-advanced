@@ -76,7 +76,8 @@ export const tagFields: INodeProperties[] = [
       },
     },
     default: '',
-    description: 'The description of the tag',
+    description:
+      'The description of the tag. Only supported when credentials are configured for Mautic v7 or higher (ignored by Mautic v6 or lower).',
   },
 
   /* -------------------------------------------------------------------------- */
@@ -127,7 +128,8 @@ export const tagFields: INodeProperties[] = [
         name: 'description',
         type: 'string',
         default: '',
-        description: 'The new description of the tag',
+        description:
+          'The new description of the tag. Only supported when credentials are configured for Mautic v7 or higher (ignored by Mautic v6 or lower).',
       },
       {
         displayName: 'Tag',

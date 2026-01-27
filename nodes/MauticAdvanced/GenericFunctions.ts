@@ -17,11 +17,12 @@ export async function mauticApiRequest(
   body: any = {},
   query?: IDataObject,
   uri?: string,
+  headers?: IDataObject,
 ): Promise<any> {
   const authenticationMethod = this.getNodeParameter('authentication', 0, 'credentials') as string;
 
   const options: IRequestOptions = {
-    headers: {},
+    headers: headers || {},
     method,
     qs: query,
     uri: uri || `/api${endpoint}`,

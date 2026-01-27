@@ -24,6 +24,26 @@ export class MauticAdvancedOAuth2Api implements ICredentialType {
       placeholder: 'https://name.mautic.net',
     },
     {
+      displayName: 'Mautic Version',
+      name: 'mauticVersion',
+      type: 'options',
+      default: 'v6',
+      options: [
+        {
+          name: 'v6 or lower',
+          value: 'v6',
+          description: 'Use legacy v1 API endpoints.',
+        },
+        {
+          name: 'v7 or higher',
+          value: 'v7',
+          description: 'Use v2 API endpoints where available.',
+        },
+      ],
+      description:
+        'Select the major Mautic version of this instance so the node can route API calls correctly.',
+    },
+    {
       displayName: 'Authorization URL',
       name: 'authUrl',
       type: 'hidden',

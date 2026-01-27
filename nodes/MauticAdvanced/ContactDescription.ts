@@ -1763,7 +1763,8 @@ export const contactFields: INodeProperties[] = [
       multipleValues: true,
     },
     placeholder: 'Add Token',
-    description: 'Custom tokens to pass to the email template. These will be available as {token_name} in your email template.',
+    description:
+      'Custom tokens to pass to the email template. These will be available as {token_name} in your email template.',
     default: {},
     displayOptions: {
       show: {

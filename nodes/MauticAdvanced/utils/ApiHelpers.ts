@@ -16,9 +16,10 @@ export async function makeApiRequest(
   body: IDataObject = {},
   query: IDataObject = {},
   uri?: string,
+  headers?: IDataObject,
 ): Promise<any> {
   try {
-    return await mauticApiRequest.call(context, method, endpoint, body, query, uri);
+    return await mauticApiRequest.call(context, method, endpoint, body, query, uri, headers);
   } catch (error) {
     if (error instanceof NodeApiError) {
       throw error;

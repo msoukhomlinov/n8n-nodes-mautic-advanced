@@ -156,7 +156,14 @@ async function getAllNotifications(context: IExecuteFunctions, itemIndex: number
   const query = buildQueryFromOptions(options);
 
   if (returnAll) {
-    const result = await makePaginatedRequest(context, 'notifications', 'GET', '/notifications', {}, query);
+    const result = await makePaginatedRequest(
+      context,
+      'notifications',
+      'GET',
+      '/notifications',
+      {},
+      query,
+    );
     return convertNumericStrings(result);
   } else {
     query.limit = limit;
