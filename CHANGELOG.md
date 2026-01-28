@@ -1,5 +1,9 @@
 # Changelog
 
+## [0.7.1] - 2026-01-29
+### Fixed
+- **Icon**: Fixed the issue with icon not showing due to case sensitivity misalignment
+
 ## [0.7.0] - 2026-01-27
 ### Added
 - **Mautic Version Selector**: Added a `Mautic Version` option to Mautic Advanced credentials (v6 or lower / v7 or higher, default v6) so API calls can be routed to the appropriate endpoints.

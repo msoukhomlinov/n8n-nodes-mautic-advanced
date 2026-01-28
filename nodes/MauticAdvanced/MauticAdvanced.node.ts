@@ -49,7 +49,7 @@ export class MauticAdvanced implements INodeType {
   description: INodeTypeDescription = {
     displayName: 'Mautic Advanced',
     name: 'mauticAdvanced',
-    icon: 'file:mauticadvanced.svg',
+    icon: 'file:MauticAdvanced.svg',
     group: ['output'],
     version: 1,
     subtitle: '={{$parameter["operation"] + ": " + $parameter["resource"]}}',
