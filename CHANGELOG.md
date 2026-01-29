@@ -1,5 +1,10 @@
 # Changelog
 
+## [0.7.2] - 2026-01-29
+### Fixed
+- **Credentials**: Fixed missing Mautic Version field in compiled credential files by ensuring build process runs before publish
+- **Publish Process**: Added `prepublishOnly` script to automatically build before publishing, preventing outdated compiled files from being published
+
 ## [0.7.1] - 2026-01-29
 ### Fixed
 - **Icon**: Fixed the issue with icon not showing due to case sensitivity misalignment
