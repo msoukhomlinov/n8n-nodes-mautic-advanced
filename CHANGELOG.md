@@ -1,5 +1,9 @@
 # Changelog
 
+## [0.7.6] - 2026-01-29
+### Fixed
+- Fixed issue with svg icon
+
 ## [0.7.5] - 2026-01-29
 ### Added
 - **Contact Get Many**: Added structured search filters for Segment(s), Tag(s), Owner(s), Stage(s), and Campaign(s) with picklist selection
