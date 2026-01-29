@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.7.5] - 2026-01-29
+### Added
+- **Contact Get Many**: Added structured search filters for Segment(s), Tag(s), Owner(s), Stage(s), and Campaign(s) with picklist selection
+- **Contact Get Many**: Added match type option (Any/All) for Segment and Tag filters
+- **Loaders**: Added `getSegmentAliases` and `getOwners` loaders for filter picklists
+
+
 ## [0.7.2] - 2026-01-29
 ### Fixed
 - **Publish Process**: Added `prepublishOnly` script to automatically build before publishing, preventing outdated compiled files from being published

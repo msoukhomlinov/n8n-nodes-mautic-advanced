@@ -16,7 +16,7 @@ export class MauticAdvancedTrigger implements INodeType {
   description: INodeTypeDescription = {
     displayName: 'Mautic Advanced Trigger',
     name: 'mauticAdvancedTrigger',
-    icon: 'file:MauticAdvanced.svg',
+    icon: 'file:mauticadvanced.svg',
     group: ['trigger'],
     version: 1,
     description: 'Handle Mautic events via webhooks',

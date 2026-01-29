@@ -1475,6 +1475,37 @@ export const contactFields: INodeProperties[] = [
     },
     options: [
       {
+        displayName: 'Any Do Not Contact Only',
+        name: 'anyDncOnly',
+        type: 'boolean',
+        default: false,
+        description: 'Return only contacts with any Do Not Contact enabled',
+      },
+      {
+        displayName: 'Campaign(s)',
+        name: 'campaigns',
+        type: 'multiOptions',
+        typeOptions: {
+          loadOptionsMethod: 'getCampaigns',
+        },
+        displayOptions: {
+          show: {
+            '/resource': ['contact'],
+            '/operation': ['getAll'],
+          },
+        },
+        default: [],
+        description:
+          'Filter contacts by membership in one or more campaigns. Uses Mautic search syntax (campaign:id) under the hood.',
+      },
+      {
+        displayName: 'Email Do Not Contact Only',
+        name: 'emailDncOnly',
+        type: 'boolean',
+        default: false,
+        description: 'Return only contacts with Email Do Not Contact enabled',
+      },
+      {
         displayName: 'Fields to Return',
         name: 'fieldsToReturn',
         type: 'multiOptions',
@@ -1486,17 +1517,17 @@ export const contactFields: INodeProperties[] = [
           'Select which fields to include in the output. Leave empty to return all fields.',
       },
       {
-        displayName: 'Search',
-        name: 'search',
-        type: 'string',
+        displayName: 'Minimal',
+        name: 'minimal',
+        type: 'boolean',
         displayOptions: {
           show: {
             '/resource': ['contact'],
             '/operation': ['getAll'],
           },
         },
-        default: '',
-        description: 'String or search command to filter entities by',
+        default: false,
+        description: 'Whether to return array of entities without additional lists in it',
       },
       {
         displayName: 'Order By',
@@ -1535,6 +1566,23 @@ export const contactFields: INodeProperties[] = [
         description: 'Sort direction: ASC or DESC',
       },
       {
+        displayName: 'Owner(s)',
+        name: 'owners',
+        type: 'multiOptions',
+        typeOptions: {
+          loadOptionsMethod: 'getOwners',
+        },
+        displayOptions: {
+          show: {
+            '/resource': ['contact'],
+            '/operation': ['getAll'],
+          },
+        },
+        default: [],
+        description:
+          'Filter contacts by owner (assigned user). Uses Mautic search syntax (owner:id) under the hood.',
+      },
+      {
         displayName: 'Published Only',
         name: 'publishedOnly',
         type: 'boolean',
@@ -1548,17 +1596,131 @@ export const contactFields: INodeProperties[] = [
         description: 'Whether to return currently published entities',
       },
       {
-        displayName: 'Minimal',
-        name: 'minimal',
+        displayName: 'RAW Data',
+        name: 'rawData',
         type: 'boolean',
+        default: true,
+        description:
+          'By default only the data of the fields get returned. If this option gets set the RAW response with all data gets returned.',
+      },
+      {
+        displayName: 'Search',
+        name: 'search',
+        type: 'string',
         displayOptions: {
           show: {
             '/resource': ['contact'],
             '/operation': ['getAll'],
           },
         },
+        default: '',
+        description: 'String or search command to filter entities by',
+      },
+      {
+        displayName: 'Segment Match Type',
+        name: 'segmentMatchType',
+        type: 'options',
+        options: [
+          {
+            name: 'Any Selected Segment',
+            value: 'any',
+          },
+          {
+            name: 'All Selected Segments',
+            value: 'all',
+          },
+        ],
+        displayOptions: {
+          show: {
+            '/resource': ['contact'],
+            '/operation': ['getAll'],
+          },
+        },
+        default: 'any',
+        description:
+          'When multiple segments are selected, choose whether to return contacts in any selected segment or only those that are in all selected segments.',
+      },
+      {
+        displayName: 'Segment(s)',
+        name: 'segments',
+        type: 'multiOptions',
+        typeOptions: {
+          loadOptionsMethod: 'getSegmentAliases',
+        },
+        displayOptions: {
+          show: {
+            '/resource': ['contact'],
+            '/operation': ['getAll'],
+          },
+        },
+        default: [],
+        description:
+          'Filter contacts by membership in one or more segments. Uses Mautic search syntax (segment:alias) under the hood.',
+      },
+      {
+        displayName: 'SMS Do Not Contact Only',
+        name: 'smsDncOnly',
+        type: 'boolean',
         default: false,
-        description: 'Whether to return array of entities without additional lists in it',
+        description: 'Return only contacts with SMS Do Not Contact enabled',
+      },
+      {
+        displayName: 'Stage(s)',
+        name: 'stages',
+        type: 'multiOptions',
+        typeOptions: {
+          loadOptionsMethod: 'getStages',
+        },
+        displayOptions: {
+          show: {
+            '/resource': ['contact'],
+            '/operation': ['getAll'],
+          },
+        },
+        default: [],
+        description:
+          'Filter contacts by one or more stages. Uses Mautic search syntax (stage:id) under the hood.',
+      },
+      {
+        displayName: 'Tag Match Type',
+        name: 'tagMatchType',
+        type: 'options',
+        options: [
+          {
+            name: 'Any Selected Tag',
+            value: 'any',
+          },
+          {
+            name: 'All Selected Tags',
+            value: 'all',
+          },
+        ],
+        displayOptions: {
+          show: {
+            '/resource': ['contact'],
+            '/operation': ['getAll'],
+          },
+        },
+        default: 'any',
+        description:
+          'When multiple tags are selected, choose whether to return contacts with any selected tag or only those with all selected tags.',
+      },
+      {
+        displayName: 'Tag(s)',
+        name: 'tags',
+        type: 'multiOptions',
+        typeOptions: {
+          loadOptionsMethod: 'getTags',
+        },
+        displayOptions: {
+          show: {
+            '/resource': ['contact'],
+            '/operation': ['getAll'],
+          },
+        },
+        default: [],
+        description:
+          'Filter contacts by one or more tags. Uses Mautic search syntax (tag:name) under the hood.',
       },
       {
         displayName: 'Where',
@@ -1689,35 +1851,6 @@ export const contactFields: INodeProperties[] = [
             ],
           },
         ],
-      },
-      {
-        displayName: 'Email Do Not Contact Only',
-        name: 'emailDncOnly',
-        type: 'boolean',
-        default: false,
-        description: 'Return only contacts with Email Do Not Contact enabled',
-      },
-      {
-        displayName: 'SMS Do Not Contact Only',
-        name: 'smsDncOnly',
-        type: 'boolean',
-        default: false,
-        description: 'Return only contacts with SMS Do Not Contact enabled',
-      },
-      {
-        displayName: 'Any Do Not Contact Only',
-        name: 'anyDncOnly',
-        type: 'boolean',
-        default: false,
-        description: 'Return only contacts with any Do Not Contact enabled',
-      },
-      {
-        displayName: 'RAW Data',
-        name: 'rawData',
-        type: 'boolean',
-        default: true,
-        description:
-          'By default only the data of the fields get returned. If this option gets set the RAW response with all data gets returned.',
       },
     ],
   },

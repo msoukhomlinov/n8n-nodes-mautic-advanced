@@ -192,6 +192,63 @@ async function getAllContacts(context: IExecuteFunctions, itemIndex: number): Pr
   const returnAll = getOptionalParam(context, 'returnAll', itemIndex, false);
   const options = getOptionalParam(context, 'options', itemIndex, {});
   const qs: any = buildQueryFromOptions(options);
+
+  // Build search expression from structured filters
+  const searchParts: string[] = [];
+
+  // Segment filter
+  const segments = (options as any).segments as string[] | undefined;
+  if (Array.isArray(segments) && segments.length > 0) {
+    const segmentMatchType = ((options as any).segmentMatchType as 'any' | 'all') || 'any';
+    const filterExpr = buildSearchFilterExpression(segments, 'segment', segmentMatchType);
+    if (filterExpr) searchParts.push(filterExpr);
+  }
+
+  // Tag filter
+  const tags = (options as any).tags as string[] | undefined;
+  if (Array.isArray(tags) && tags.length > 0) {
+    const tagMatchType = ((options as any).tagMatchType as 'any' | 'all') || 'any';
+    const filterExpr = buildSearchFilterExpression(tags, 'tag', tagMatchType);
+    if (filterExpr) searchParts.push(filterExpr);
+  }
+
+  // Owner filter (always OR for multiple owners - a contact can only have one owner)
+  const owners = (options as any).owners as string[] | undefined;
+  if (Array.isArray(owners) && owners.length > 0) {
+    const filterExpr = buildSearchFilterExpression(owners, 'owner', 'any');
+    if (filterExpr) searchParts.push(filterExpr);
+  }
+
+  // Stage filter (always OR for multiple stages - a contact can only be in one stage)
+  const stages = (options as any).stages as string[] | undefined;
+  if (Array.isArray(stages) && stages.length > 0) {
+    const filterExpr = buildSearchFilterExpression(stages, 'stage', 'any');
+    if (filterExpr) searchParts.push(filterExpr);
+  }
+
+  // Campaign filter (OR for multiple campaigns)
+  const campaigns = (options as any).campaigns as string[] | undefined;
+  if (Array.isArray(campaigns) && campaigns.length > 0) {
+    const filterExpr = buildSearchFilterExpression(campaigns, 'campaign', 'any');
+    if (filterExpr) searchParts.push(filterExpr);
+  }
+
+  // Combine all structured filters with AND
+  if (searchParts.length > 0) {
+    const structuredSearch =
+      searchParts.length === 1
+        ? searchParts[0]
+        : searchParts.map((part) => `(${part})`).join(' AND ');
+
+    // Merge with raw search if provided
+    const rawSearch = (options as any).search as string | undefined;
+    if (rawSearch && rawSearch.trim().length > 0) {
+      qs.search = `${structuredSearch} AND (${rawSearch})`;
+    } else {
+      qs.search = structuredSearch;
+    }
+  }
+
   if (!qs.orderBy) qs.orderBy = 'id';
   if (!qs.orderByDir) qs.orderByDir = 'asc';
   if (qs.orderBy) {
@@ -527,6 +584,34 @@ async function getAllContactActivity(context: IExecuteFunctions, itemIndex: numb
   if ((options as any).limit) qs.limit = (options as any).limit;
   const result = await makePaginatedRequest(context, 'events', 'GET', `/contacts/activity`, {}, qs);
   return convertNumericStrings(result);
+}
+
+/**
+ * Build a Mautic search filter expression from an array of values.
+ * @param values Array of filter values (IDs, aliases, or names)
+ * @param filterType The Mautic search filter type (e.g., 'segment', 'tag', 'owner', 'stage', 'campaign')
+ * @param matchType 'any' for OR logic, 'all' for AND logic
+ * @returns The search expression string, or empty string if no valid values
+ */
+function buildSearchFilterExpression(
+  values: string[],
+  filterType: string,
+  matchType: 'any' | 'all',
+): string {
+  const filters = values
+    .map((value) => `${filterType}:${value}`)
+    .filter((expr) => expr.trim().length > 0);
+
+  if (filters.length === 0) {
+    return '';
+  }
+
+  if (filters.length === 1) {
+    return filters[0];
+  }
+
+  const operator = matchType === 'all' ? ' AND ' : ' OR ';
+  return filters.join(operator);
 }
 
 function normalizeTagsInput(tagsInput: any): string[] {

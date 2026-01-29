@@ -49,7 +49,7 @@ export class MauticAdvanced implements INodeType {
   description: INodeTypeDescription = {
     displayName: 'Mautic Advanced',
     name: 'mauticAdvanced',
-    icon: 'file:MauticAdvanced.svg',
+    icon: 'file:mauticadvanced.svg',
     group: ['output'],
     version: 1,
     subtitle: '={{$parameter["operation"] + ": " + $parameter["resource"]}}',
@@ -327,11 +327,43 @@ export class MauticAdvanced implements INodeType {
       // select them easily
       async getSegments(this: ILoadOptionsFunctions): Promise<INodePropertyOptions[]> {
         const returnData: INodePropertyOptions[] = [];
-        const segments = await mauticApiRequestAllItems.call(this, 'segments', 'GET', '/segments');
+        const segments = await mauticApiRequestAllItems.call(this, 'lists', 'GET', '/segments');
         for (const segment of segments) {
           returnData.push({
             name: segment.name,
             value: segment.id,
+          });
+        }
+        return returnData;
+      },
+      // Get all the available segments (by alias) for search filtering
+      async getSegmentAliases(this: ILoadOptionsFunctions): Promise<INodePropertyOptions[]> {
+        const returnData: INodePropertyOptions[] = [];
+        const segments = await mauticApiRequestAllItems.call(this, 'lists', 'GET', '/segments');
+        for (const segment of segments) {
+          // Use alias if available, otherwise skip (alias is required for search syntax)
+          const alias = segment.alias || segment.id?.toString();
+          if (alias) {
+            returnData.push({
+              name: segment.name || alias,
+              value: alias,
+            });
+          }
+        }
+        return returnData;
+      },
+      // Get all the available owners (users) for filtering
+      async getOwners(this: ILoadOptionsFunctions): Promise<INodePropertyOptions[]> {
+        const returnData: INodePropertyOptions[] = [];
+        const response = await mauticApiRequest.call(this, 'GET', '/contacts/list/owners');
+        const owners = response || [];
+        for (const owner of owners) {
+          returnData.push({
+            name:
+              `${owner.firstName || ''} ${owner.lastName || ''}`.trim() ||
+              owner.username ||
+              `User ${owner.id}`,
+            value: owner.id,
           });
         }
         return returnData;
