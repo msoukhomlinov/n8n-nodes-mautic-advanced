@@ -44,3 +44,11 @@ coverage/
 
 # Package lock file
 package-lock.json
+
+# AI / Cursor / docs configs (managed by private repo)
+/.claude
+/docs
+/CLAUDE.md
+/AGENT.md
+/.agent*
+/.private-git
