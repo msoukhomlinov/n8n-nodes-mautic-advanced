@@ -76,7 +76,7 @@ async function updateCampaign(context: IExecuteFunctions, itemIndex: number): Pr
 
 async function cloneCampaign(context: IExecuteFunctions, itemIndex: number): Promise<any> {
   const campaignId = getRequiredParam<string>(context, 'campaignId', itemIndex);
-  const response = await makeApiRequest(context, 'POST', `/campaigns/${campaignId}/clone`);
+  const response = await makeApiRequest(context, 'POST', `/campaigns/clone/${campaignId}`);
   return response.campaign;
 }
 
@@ -98,7 +98,7 @@ async function getAllCampaigns(context: IExecuteFunctions, itemIndex: number): P
   } else {
     qs.limit = getOptionalParam<number>(context, 'limit', itemIndex, 30);
     const response = await makeApiRequest(context, 'GET', '/campaigns', {}, qs);
-    return convertNumericStrings(response.campaigns);
+    return convertNumericStrings(Object.values(response.campaigns || {}));
   }
 }
 

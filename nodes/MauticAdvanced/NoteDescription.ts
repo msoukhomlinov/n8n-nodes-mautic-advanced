@@ -272,13 +272,6 @@ export const noteFields: INodeProperties[] = [
         description: 'Sort direction',
       },
       {
-        displayName: 'Published Only',
-        name: 'publishedOnly',
-        type: 'boolean',
-        default: false,
-        description: 'Whether to return only currently published notes',
-      },
-      {
         displayName: 'Search',
         name: 'search',
         type: 'string',

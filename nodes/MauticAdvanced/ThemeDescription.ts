@@ -111,52 +111,6 @@ export const themeFields: INodeProperties[] = [
     default: 50,
     description: 'Max number of results to return',
   },
-  {
-    displayName: 'Options',
-    name: 'options',
-    type: 'collection',
-    placeholder: 'Add Option',
-    default: {},
-    displayOptions: {
-      show: {
-        resource: ['theme'],
-        operation: ['getAll'],
-      },
-    },
-    options: [
-      {
-        displayName: 'Order By',
-        name: 'orderBy',
-        type: 'string',
-        default: '',
-        description: 'Column to sort by',
-      },
-      {
-        displayName: 'Order By Direction',
-        name: 'orderByDir',
-        type: 'options',
-        options: [
-          {
-            name: 'ASC',
-            value: 'asc',
-          },
-          {
-            name: 'DESC',
-            value: 'desc',
-          },
-        ],
-        default: 'asc',
-        description: 'Sort direction',
-      },
-      {
-        displayName: 'Search',
-        name: 'search',
-        type: 'string',
-        default: '',
-        description: 'String or search command to filter themes by',
-      },
-    ],
-  },
 
   /* -------------------------------------------------------------------------- */
   /*                                theme:delete                                */

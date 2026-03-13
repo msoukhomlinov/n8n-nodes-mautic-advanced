@@ -19,6 +19,32 @@
   - **Null/empty guards**: `get` returns `ENTITY_NOT_FOUND`; filtered `getAll` returns `NO_RESULTS_FOUND` with filter context
   - **n8n metadata stripping**: 8 framework-injected fields (including `root` canvas UUID) stripped before API calls
 
+### Fixed
+
+- **Contact Segments/Campaigns**: Fixed batch add/remove operations using nonexistent API endpoints — now correctly calls per-item segment/campaign endpoints
+- **Campaign Clone**: Fixed reversed endpoint path (`/campaigns/clone/{id}` instead of `/campaigns/{id}/clone`)
+- **Segment Batch Add**: Fixed contact IDs sent as strings instead of integers
+- **Contact Points**: Fixed response extraction returning empty instead of success confirmation
+- **Company Contact**: Fixed invalid default operation value causing UI initialization issue
+- **Field Properties**: Fixed nested fixedCollection path for select/multiselect field creation and update
+- **Contact DNC Filter**: Fixed pagination overshoot returning more results than requested limit
+- **Social Media Fields**: Fixed field alias prefix causing social fields to not be recognized by API
+- **Contact Update JSON**: Fixed raw JSON body overwriting UI field values instead of merging
+- **Contact Notes Query**: Fixed raw options object leaking UI-specific keys to API query parameters
+- **Campaign Get All**: Fixed keyed object response not converted to array for non-paginated requests
+- **Segment Update**: Made name field optional for update operations (PATCH supports partial updates)
+- **Role/User Simplify**: Removed non-functional simplify toggle (roles/users don't have contact-style field structure)
+- **API Requests**: Removed empty JSON body from GET/DELETE requests for HTTP compliance
+- **Contact Fields Processing**: Fixed rawData logic defaulting to raw mode when option not present
+- **Company Fields**: Fixed typo in `numberOfEmployees` parameter name
+- **UI Validation**: Added missing `required` flags on ID fields for Company Contact, Role, and User operations
+- **Tag Limit**: Aligned code fallback default (50) with UI default
+- **Theme Options**: Removed unsupported search/sort options from Theme getAll
+- **Note Options**: Removed meaningless `publishedOnly` option from Note getAll
+- **AI Tools**: Added `continueOnFail` support to AI Tools node
+- **Contact Update**: Added empty-string sanitization matching contact create behavior
+- **AI Tools Endpoints**: Fixed batch segment/campaign endpoints in AI tool executor matching main node fix
+
 ### Changed
 
 - **Major version bump** to 1.0.0 reflecting AI Tools capability, API maturity, and 16 resources with 70+ operations

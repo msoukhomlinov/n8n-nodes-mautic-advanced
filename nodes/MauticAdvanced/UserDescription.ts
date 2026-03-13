@@ -160,19 +160,6 @@ export const userFields: INodeProperties[] = [
     description: 'ID of the role to assign to the user',
   },
   {
-    displayName: 'Simplify',
-    name: 'simple',
-    type: 'boolean',
-    displayOptions: {
-      show: {
-        resource: ['user'],
-        operation: ['create'],
-      },
-    },
-    default: true,
-    description: 'Whether to return a simplified version of the response instead of the raw data',
-  },
-  {
     displayName: 'Additional Fields',
     name: 'additionalFields',
     type: 'collection',
@@ -238,6 +225,7 @@ export const userFields: INodeProperties[] = [
     displayName: 'User ID',
     name: 'userId',
     type: 'string',
+    required: true,
     displayOptions: {
       show: {
         operation: ['update'],
@@ -246,19 +234,6 @@ export const userFields: INodeProperties[] = [
     },
     default: '',
     description: 'The ID of the user to update',
-  },
-  {
-    displayName: 'Simplify',
-    name: 'simple',
-    type: 'boolean',
-    displayOptions: {
-      show: {
-        resource: ['user'],
-        operation: ['update'],
-      },
-    },
-    default: true,
-    description: 'Whether to return a simplified version of the response instead of the raw data',
   },
   {
     displayName: 'Update Fields',
@@ -388,6 +363,7 @@ export const userFields: INodeProperties[] = [
     displayName: 'User ID',
     name: 'userId',
     type: 'string',
+    required: true,
     displayOptions: {
       show: {
         operation: ['get'],
@@ -396,19 +372,6 @@ export const userFields: INodeProperties[] = [
     },
     default: '',
     description: 'The ID of the user to return',
-  },
-  {
-    displayName: 'Simplify',
-    name: 'simple',
-    type: 'boolean',
-    displayOptions: {
-      show: {
-        resource: ['user'],
-        operation: ['get'],
-      },
-    },
-    default: true,
-    description: 'Whether to return a simplified version of the response instead of the raw data',
   },
 
   /* -------------------------------------------------------------------------- */
@@ -444,19 +407,6 @@ export const userFields: INodeProperties[] = [
     default: 30,
     description:
       'Max number of results to return. If you request more than 30 records, the node will automatically use pagination to fetch up to the requested number.',
-  },
-  {
-    displayName: 'Simplify',
-    name: 'simple',
-    type: 'boolean',
-    displayOptions: {
-      show: {
-        resource: ['user'],
-        operation: ['getAll'],
-      },
-    },
-    default: true,
-    description: 'Whether to return a simplified version of the response instead of the raw data',
   },
   {
     displayName: 'Additional Fields',
@@ -526,6 +476,7 @@ export const userFields: INodeProperties[] = [
     displayName: 'User ID',
     name: 'userId',
     type: 'string',
+    required: true,
     displayOptions: {
       show: {
         operation: ['delete'],
@@ -534,18 +485,5 @@ export const userFields: INodeProperties[] = [
     },
     default: '',
     description: 'The ID of the user to delete',
-  },
-  {
-    displayName: 'Simplify',
-    name: 'simple',
-    type: 'boolean',
-    displayOptions: {
-      show: {
-        resource: ['user'],
-        operation: ['delete'],
-      },
-    },
-    default: true,
-    description: 'Whether to return a simplified version of the response instead of the raw data',
   },
 ];

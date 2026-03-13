@@ -25,7 +25,7 @@ export const companyContactOperations: INodeProperties[] = [
         action: 'Remove a company contact',
       },
     ],
-    default: 'create',
+    default: 'add',
   },
 ];
 
@@ -37,6 +37,7 @@ export const companyContactFields: INodeProperties[] = [
     displayName: 'Contact ID',
     name: 'contactId',
     type: 'string',
+    required: true,
     displayOptions: {
       show: {
         resource: ['companyContact'],
@@ -50,6 +51,7 @@ export const companyContactFields: INodeProperties[] = [
     displayName: 'Company ID',
     name: 'companyId',
     type: 'string',
+    required: true,
     displayOptions: {
       show: {
         resource: ['companyContact'],

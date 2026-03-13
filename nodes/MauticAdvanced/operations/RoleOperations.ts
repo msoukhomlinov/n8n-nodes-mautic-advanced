@@ -47,7 +47,6 @@ export async function executeRoleOperation(
 }
 
 async function createRole(context: IExecuteFunctions, itemIndex: number): Promise<any> {
-  const simple = getOptionalParam<boolean>(context, 'simple', itemIndex, true);
   const name = getRequiredParam<string>(context, 'name', itemIndex);
   const body: IDataObject = { name };
 
@@ -73,16 +72,12 @@ async function createRole(context: IExecuteFunctions, itemIndex: number): Promis
   Object.assign(body, rest);
 
   const response = await makeApiRequest(context, 'POST', '/roles/new', body);
-  let result = response.role ?? response;
-  if (simple && result?.fields?.all) {
-    result = result.fields.all;
-  }
+  const result = response.role ?? response;
   return convertNumericStrings(result);
 }
 
 async function updateRole(context: IExecuteFunctions, itemIndex: number): Promise<any> {
   const roleId = getRequiredParam<string>(context, 'roleId', itemIndex);
-  const simple = getOptionalParam<boolean>(context, 'simple', itemIndex, true);
   const body: IDataObject = {};
 
   const updateFields = getOptionalParam<IDataObject>(context, 'updateFields', itemIndex, {});
@@ -103,27 +98,19 @@ async function updateRole(context: IExecuteFunctions, itemIndex: number): Promis
   Object.assign(body, rest);
 
   const response = await makeApiRequest(context, 'PATCH', `/roles/${roleId}/edit`, body);
-  let result = response.role ?? response;
-  if (simple && result?.fields?.all) {
-    result = result.fields.all;
-  }
+  const result = response.role ?? response;
   return convertNumericStrings(result);
 }
 
 async function getRole(context: IExecuteFunctions, itemIndex: number): Promise<any> {
   const roleId = getRequiredParam<string>(context, 'roleId', itemIndex);
-  const simple = getOptionalParam<boolean>(context, 'simple', itemIndex, true);
   const response = await makeApiRequest(context, 'GET', `/roles/${roleId}`);
-  let result = response.role ?? response;
-  if (simple && result?.fields?.all) {
-    result = result.fields.all;
-  }
+  const result = response.role ?? response;
   return convertNumericStrings(result);
 }
 
 async function getAllRoles(context: IExecuteFunctions, itemIndex: number): Promise<any> {
   const returnAll = getOptionalParam<boolean>(context, 'returnAll', itemIndex, false);
-  const simple = getOptionalParam<boolean>(context, 'simple', itemIndex, true);
   const additionalFields = getOptionalParam<IDataObject>(
     context,
     'additionalFields',
@@ -148,25 +135,12 @@ async function getAllRoles(context: IExecuteFunctions, itemIndex: number): Promi
       : (Object.values(rolesContainer) as any[]);
   }
 
-  if (simple) {
-    responseData = responseData.map((item: any) => {
-      if (item?.fields?.all) {
-        return item.fields.all;
-      }
-      return item;
-    });
-  }
-
   return convertNumericStrings(responseData);
 }
 
 async function deleteRole(context: IExecuteFunctions, itemIndex: number): Promise<any> {
-  const simple = getOptionalParam<boolean>(context, 'simple', itemIndex, true);
   const roleId = getRequiredParam<string>(context, 'roleId', itemIndex);
   const response = await makeApiRequest(context, 'DELETE', `/roles/${roleId}/delete`);
-  let result = response.role ?? response;
-  if (simple && result?.fields?.all) {
-    result = result.fields.all;
-  }
+  const result = response.role ?? response;
   return convertNumericStrings(result);
 }

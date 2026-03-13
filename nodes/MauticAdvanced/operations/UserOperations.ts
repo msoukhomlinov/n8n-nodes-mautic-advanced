@@ -46,7 +46,6 @@ export async function executeUserOperation(
 }
 
 async function createUser(context: IExecuteFunctions, itemIndex: number): Promise<any> {
-  const simple = getOptionalParam<boolean>(context, 'simple', itemIndex, true);
   const username = getRequiredParam<string>(context, 'username', itemIndex);
   const email = getRequiredParam<string>(context, 'email', itemIndex);
   const body: IDataObject = {
@@ -108,17 +107,12 @@ async function createUser(context: IExecuteFunctions, itemIndex: number): Promis
   Object.assign(body, rest);
 
   const response = await makeApiRequest(context, 'POST', '/users/new', body);
-  let result = response.user ?? response;
-  // For users, Mautic does not always provide fields.all, but handle it gracefully if present
-  if (simple && result?.fields?.all) {
-    result = result.fields.all;
-  }
+  const result = response.user ?? response;
   return convertNumericStrings(result);
 }
 
 async function updateUser(context: IExecuteFunctions, itemIndex: number): Promise<any> {
   const userId = getRequiredParam<string>(context, 'userId', itemIndex);
-  const simple = getOptionalParam<boolean>(context, 'simple', itemIndex, true);
   const body: IDataObject = {};
 
   const updateFields = getOptionalParam<IDataObject>(context, 'updateFields', itemIndex, {});
@@ -165,27 +159,19 @@ async function updateUser(context: IExecuteFunctions, itemIndex: number): Promis
   Object.assign(body, rest);
 
   const response = await makeApiRequest(context, 'PATCH', `/users/${userId}/edit`, body);
-  let result = response.user ?? response;
-  if (simple && result?.fields?.all) {
-    result = result.fields.all;
-  }
+  const result = response.user ?? response;
   return convertNumericStrings(result);
 }
 
 async function getUser(context: IExecuteFunctions, itemIndex: number): Promise<any> {
   const userId = getRequiredParam<string>(context, 'userId', itemIndex);
-  const simple = getOptionalParam<boolean>(context, 'simple', itemIndex, true);
   const response = await makeApiRequest(context, 'GET', `/users/${userId}`);
-  let result = response.user ?? response;
-  if (simple && result?.fields?.all) {
-    result = result.fields.all;
-  }
+  const result = response.user ?? response;
   return convertNumericStrings(result);
 }
 
 async function getAllUsers(context: IExecuteFunctions, itemIndex: number): Promise<any> {
   const returnAll = getOptionalParam<boolean>(context, 'returnAll', itemIndex, false);
-  const simple = getOptionalParam<boolean>(context, 'simple', itemIndex, true);
   const additionalFields = getOptionalParam<IDataObject>(
     context,
     'additionalFields',
@@ -210,25 +196,12 @@ async function getAllUsers(context: IExecuteFunctions, itemIndex: number): Promi
       : (Object.values(usersContainer) as any[]);
   }
 
-  if (simple) {
-    responseData = responseData.map((item: any) => {
-      if (item?.fields?.all) {
-        return item.fields.all;
-      }
-      return item;
-    });
-  }
-
   return convertNumericStrings(responseData);
 }
 
 async function deleteUser(context: IExecuteFunctions, itemIndex: number): Promise<any> {
-  const simple = getOptionalParam<boolean>(context, 'simple', itemIndex, true);
   const userId = getRequiredParam<string>(context, 'userId', itemIndex);
   const response = await makeApiRequest(context, 'DELETE', `/users/${userId}/delete`);
-  let result = response.user ?? response;
-  if (simple && result?.fields?.all) {
-    result = result.fields.all;
-  }
+  const result = response.user ?? response;
   return convertNumericStrings(result);
 }

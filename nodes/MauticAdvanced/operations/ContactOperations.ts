@@ -163,7 +163,7 @@ async function updateContact(context: IExecuteFunctions, itemIndex: number): Pro
     [key: string]: any;
   };
   const contactId = getRequiredParam(context, 'contactId', itemIndex);
-  let body: any = {};
+  const body: any = {};
   if (updateFields.email) body.email = updateFields.email;
   if (updateFields.firstName) body.firstname = updateFields.firstName;
   if (updateFields.lastName) body.lastname = updateFields.lastName;
@@ -171,10 +171,24 @@ async function updateContact(context: IExecuteFunctions, itemIndex: number): Pro
   if (updateFields.position) body.position = updateFields.position;
   if (updateFields.title) body.title = updateFields.title;
   if ((updateFields as any).bodyJson) {
-    body = validateJsonParameter(context, 'updateFields.bodyJson', itemIndex);
+    Object.assign(body, validateJsonParameter(context, 'updateFields.bodyJson', itemIndex));
   }
   addContactFields(body, updateFields);
-  const response = await makeApiRequest(context, 'PATCH', `/contacts/${contactId}/edit`, body);
+
+  // Data sanitization: Remove empty string values (matching create behavior)
+  const sanitizedBody: any = {};
+  Object.entries(body).forEach(([key, value]) => {
+    if (value !== '' && value !== null && value !== undefined) {
+      sanitizedBody[key] = value;
+    }
+  });
+
+  const response = await makeApiRequest(
+    context,
+    'PATCH',
+    `/contacts/${contactId}/edit`,
+    sanitizedBody,
+  );
   const contactData = [response.contact];
   return processContactFields(contactData, options);
 }
@@ -368,7 +382,7 @@ async function editContactPoints(context: IExecuteFunctions, itemIndex: number):
       : `/contacts/${contactId}/points/minus/${points}`;
 
   const response = await makeApiRequest(context, 'POST', endpoint, body);
-  return response.contact;
+  return response;
 }
 
 async function editDoNotContactList(context: IExecuteFunctions, itemIndex: number): Promise<any> {
@@ -464,7 +478,10 @@ async function getContactActivity(context: IExecuteFunctions, itemIndex: number)
 async function getContactNotes(context: IExecuteFunctions, itemIndex: number): Promise<any> {
   const contactId = getRequiredParam(context, 'contactId', itemIndex);
   const options = getOptionalParam(context, 'options', itemIndex, {});
-  const qs: any = options;
+  const qs: any = {};
+  if ((options as any).search) qs.search = (options as any).search;
+  if ((options as any).orderBy) qs.orderBy = (options as any).orderBy;
+  if ((options as any).orderByDir) qs.orderByDir = (options as any).orderByDir;
   const result = await makePaginatedRequest(
     context,
     'notes',
@@ -511,15 +528,21 @@ async function getContactSegments(context: IExecuteFunctions, itemIndex: number)
 
 async function addContactToSegments(context: IExecuteFunctions, itemIndex: number): Promise<any> {
   const contactId = getRequiredParam(context, 'contactId', itemIndex);
-  const segmentIds = getRequiredParam(context, 'segmentIds', itemIndex);
-  const body = { segments: segmentIds };
-  const response = await makeApiRequest(
-    context,
-    'POST',
-    `/contacts/${contactId}/segments/add`,
-    body,
-  );
-  return response.contact;
+  const segmentIdsRaw = getRequiredParam(context, 'segmentIds', itemIndex) as string;
+  const ids = segmentIdsRaw
+    .split(',')
+    .map((s) => s.trim())
+    .filter(Boolean);
+  const results: any[] = [];
+  for (const segmentId of ids) {
+    const response = await makeApiRequest(
+      context,
+      'POST',
+      `/segments/${segmentId}/contact/${contactId}/add`,
+    );
+    results.push(response);
+  }
+  return results;
 }
 
 async function removeContactFromSegments(
@@ -527,28 +550,40 @@ async function removeContactFromSegments(
   itemIndex: number,
 ): Promise<any> {
   const contactId = getRequiredParam(context, 'contactId', itemIndex);
-  const segmentIds = getRequiredParam(context, 'segmentIds', itemIndex);
-  const body = { segments: segmentIds };
-  const response = await makeApiRequest(
-    context,
-    'POST',
-    `/contacts/${contactId}/segments/remove`,
-    body,
-  );
-  return response.contact;
+  const segmentIdsRaw = getRequiredParam(context, 'segmentIds', itemIndex) as string;
+  const ids = segmentIdsRaw
+    .split(',')
+    .map((s) => s.trim())
+    .filter(Boolean);
+  const results: any[] = [];
+  for (const segmentId of ids) {
+    const response = await makeApiRequest(
+      context,
+      'POST',
+      `/segments/${segmentId}/contact/${contactId}/remove`,
+    );
+    results.push(response);
+  }
+  return results;
 }
 
 async function addContactToCampaigns(context: IExecuteFunctions, itemIndex: number): Promise<any> {
   const contactId = getRequiredParam(context, 'contactId', itemIndex);
-  const campaignIds = getRequiredParam(context, 'campaignIds', itemIndex);
-  const body = { campaigns: campaignIds };
-  const response = await makeApiRequest(
-    context,
-    'POST',
-    `/contacts/${contactId}/campaigns/add`,
-    body,
-  );
-  return response.contact;
+  const campaignIdsRaw = getRequiredParam(context, 'campaignIds', itemIndex) as string;
+  const ids = campaignIdsRaw
+    .split(',')
+    .map((s) => s.trim())
+    .filter(Boolean);
+  const results: any[] = [];
+  for (const campaignId of ids) {
+    const response = await makeApiRequest(
+      context,
+      'POST',
+      `/campaigns/${campaignId}/contact/${contactId}/add`,
+    );
+    results.push(response);
+  }
+  return results;
 }
 
 async function removeContactFromCampaigns(
@@ -556,15 +591,21 @@ async function removeContactFromCampaigns(
   itemIndex: number,
 ): Promise<any> {
   const contactId = getRequiredParam(context, 'contactId', itemIndex);
-  const campaignIds = getRequiredParam(context, 'campaignIds', itemIndex);
-  const body = { campaigns: campaignIds };
-  const response = await makeApiRequest(
-    context,
-    'POST',
-    `/contacts/${contactId}/campaigns/remove`,
-    body,
-  );
-  return response.contact;
+  const campaignIdsRaw = getRequiredParam(context, 'campaignIds', itemIndex) as string;
+  const ids = campaignIdsRaw
+    .split(',')
+    .map((s) => s.trim())
+    .filter(Boolean);
+  const results: any[] = [];
+  for (const campaignId of ids) {
+    const response = await makeApiRequest(
+      context,
+      'POST',
+      `/campaigns/${campaignId}/contact/${contactId}/remove`,
+    );
+    results.push(response);
+  }
+  return results;
 }
 
 async function getAllContactActivity(context: IExecuteFunctions, itemIndex: number): Promise<any> {
@@ -679,8 +720,7 @@ function addContactFields(body: any, fields: any) {
   if (socialMediaUi?.socialMediaValues) {
     const { socialMediaValues } = socialMediaUi;
     const data = socialMediaValues.reduce(
-      (obj: any, value: any) =>
-        Object.assign(obj, { [`social_${value.socialMediaField}`]: value.value }),
+      (obj: any, value: any) => Object.assign(obj, { [`${value.socialMediaField}`]: value.value }),
       {},
     );
     Object.assign(body, data);
@@ -733,9 +773,10 @@ async function getContactsWithDncFilter(
       if (anyDncOnly) return hasEmailDnc || hasSmsDnc;
       return true;
     });
-    contacts.push(...filtered);
+    const toAdd = filtered.slice(0, remaining);
+    contacts.push(...toAdd);
     if (pageContacts.length < pageLimit) break;
-    remaining -= filtered.length;
+    remaining -= toAdd.length;
     currentStart += pageLimit;
   }
   return contacts;

@@ -472,6 +472,13 @@ export class MauticAdvancedAiTools implements INodeType {
 					pairedItem: { item: itemIndex },
 				});
 			} catch (error) {
+				if (this.continueOnFail()) {
+					response.push({
+						json: { error: error instanceof Error ? error.message : String(error) },
+						pairedItem: { item: itemIndex },
+					});
+					continue;
+				}
 				throw new NodeOperationError(
 					this.getNode(),
 					error instanceof Error ? error.message : String(error),

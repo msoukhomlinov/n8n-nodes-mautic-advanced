@@ -331,9 +331,13 @@ async function executeContactTool(
 				"Call mauticadvanced_contact with operation 'getAll' and 'search' to find the contact ID."));
 			const segmentIds = typeof params.segmentIds === 'string'
 				? (params.segmentIds as string).split(',').map((s: string) => s.trim()).filter(Boolean)
-				: params.segmentIds;
-			const response = await apiRequest(context, 'POST', `/contacts/${contactId}/segments/add`, { segments: segmentIds });
-			return JSON.stringify(wrapSuccess(resource, operation, response.contact ?? response));
+				: (Array.isArray(params.segmentIds) ? params.segmentIds : []);
+			const results: unknown[] = [];
+			for (const segmentId of segmentIds) {
+				const resp = await apiRequest(context, 'POST', `/segments/${segmentId}/contact/${contactId}/add`);
+				results.push(resp);
+			}
+			return JSON.stringify(wrapSuccess(resource, operation, results));
 		}
 		case 'removeFromSegments': {
 			const contactId = params.id;
@@ -342,9 +346,13 @@ async function executeContactTool(
 				"Call mauticadvanced_contact with operation 'getAll' and 'search' to find the contact ID."));
 			const segmentIds = typeof params.segmentIds === 'string'
 				? (params.segmentIds as string).split(',').map((s: string) => s.trim()).filter(Boolean)
-				: params.segmentIds;
-			const response = await apiRequest(context, 'POST', `/contacts/${contactId}/segments/remove`, { segments: segmentIds });
-			return JSON.stringify(wrapSuccess(resource, operation, response.contact ?? response));
+				: (Array.isArray(params.segmentIds) ? params.segmentIds : []);
+			const results: unknown[] = [];
+			for (const segmentId of segmentIds) {
+				const resp = await apiRequest(context, 'POST', `/segments/${segmentId}/contact/${contactId}/remove`);
+				results.push(resp);
+			}
+			return JSON.stringify(wrapSuccess(resource, operation, results));
 		}
 		case 'addToCampaigns': {
 			const contactId = params.id;
@@ -353,9 +361,13 @@ async function executeContactTool(
 				"Call mauticadvanced_contact with operation 'getAll' and 'search' to find the contact ID."));
 			const campaignIds = typeof params.campaignIds === 'string'
 				? (params.campaignIds as string).split(',').map((s: string) => s.trim()).filter(Boolean)
-				: params.campaignIds;
-			const response = await apiRequest(context, 'POST', `/contacts/${contactId}/campaigns/add`, { campaigns: campaignIds });
-			return JSON.stringify(wrapSuccess(resource, operation, response.contact ?? response));
+				: (Array.isArray(params.campaignIds) ? params.campaignIds : []);
+			const results: unknown[] = [];
+			for (const campaignId of campaignIds) {
+				const resp = await apiRequest(context, 'POST', `/campaigns/${campaignId}/contact/${contactId}/add`);
+				results.push(resp);
+			}
+			return JSON.stringify(wrapSuccess(resource, operation, results));
 		}
 		case 'removeFromCampaigns': {
 			const contactId = params.id;
@@ -364,9 +376,13 @@ async function executeContactTool(
 				"Call mauticadvanced_contact with operation 'getAll' and 'search' to find the contact ID."));
 			const campaignIds = typeof params.campaignIds === 'string'
 				? (params.campaignIds as string).split(',').map((s: string) => s.trim()).filter(Boolean)
-				: params.campaignIds;
-			const response = await apiRequest(context, 'POST', `/contacts/${contactId}/campaigns/remove`, { campaigns: campaignIds });
-			return JSON.stringify(wrapSuccess(resource, operation, response.contact ?? response));
+				: (Array.isArray(params.campaignIds) ? params.campaignIds : []);
+			const results: unknown[] = [];
+			for (const campaignId of campaignIds) {
+				const resp = await apiRequest(context, 'POST', `/campaigns/${campaignId}/contact/${contactId}/remove`);
+				results.push(resp);
+			}
+			return JSON.stringify(wrapSuccess(resource, operation, results));
 		}
 		default:
 			return JSON.stringify(wrapError(resource, operation, ERROR_TYPES.INVALID_OPERATION,

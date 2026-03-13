@@ -224,7 +224,7 @@ export const companyFields: INodeProperties[] = [
       },
       {
         displayName: 'Number of Employees',
-        name: 'numberOfEmpoyees',
+        name: 'numberOfEmployees',
         type: 'number',
         default: 0,
       },
@@ -432,7 +432,7 @@ export const companyFields: INodeProperties[] = [
       },
       {
         displayName: 'Number of Employees',
-        name: 'numberOfEmpoyees',
+        name: 'numberOfEmployees',
         type: 'number',
         default: 0,
       },

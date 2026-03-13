@@ -77,10 +77,23 @@ export const segmentFields: INodeProperties[] = [
     displayOptions: {
       show: {
         resource: ['segment'],
-        operation: ['create', 'update'],
+        operation: ['create'],
       },
     },
     default: '',
+  },
+  {
+    displayName: 'Name',
+    name: 'name',
+    type: 'string',
+    displayOptions: {
+      show: {
+        resource: ['segment'],
+        operation: ['update'],
+      },
+    },
+    default: '',
+    description: 'New name for the segment (leave empty to keep current)',
   },
   {
     displayName: 'Additional Fields',

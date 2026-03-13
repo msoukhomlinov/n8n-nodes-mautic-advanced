@@ -26,9 +26,12 @@ export async function mauticApiRequest(
     method,
     qs: query,
     uri: uri || `/api${endpoint}`,
-    body,
     json: true,
   };
+
+  if (['POST', 'PUT', 'PATCH'].includes(method)) {
+    options.body = body;
+  }
 
   try {
     let returnData;

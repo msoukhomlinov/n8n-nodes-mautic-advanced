@@ -72,7 +72,7 @@ export async function getAllTagsV1(context: IExecuteFunctions, itemIndex: number
     return convertNumericStrings(result);
   }
 
-  qs.limit = getOptionalParam<number>(context, 'limit', itemIndex, 30);
+  qs.limit = getOptionalParam<number>(context, 'limit', itemIndex, 50);
   const response = await makeApiRequest(context, 'GET', '/tags', {}, qs);
   const data = response.tags ? Object.values(response.tags) : [];
   return convertNumericStrings(data);

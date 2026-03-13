@@ -28,7 +28,7 @@ export function processContactFields(
   options: { rawData?: boolean; fieldsToReturn?: string[] },
   fieldsToReturn?: string[],
 ): any[] {
-  if (options.rawData !== false) {
+  if (options.rawData === true) {
     return responseData;
   }
   const processedData = Array.isArray(responseData)

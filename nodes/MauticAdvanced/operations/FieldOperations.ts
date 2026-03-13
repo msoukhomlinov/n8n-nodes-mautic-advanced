@@ -98,9 +98,10 @@ async function createField(context: IExecuteFunctions, itemIndex: number): Promi
   }
 
   // Process properties for select/multiselect fields
-  if (properties.list && properties.list.items && Array.isArray(properties.list.items)) {
+  const listItems = properties?.list?.items?.item || properties?.list?.items || [];
+  if (Array.isArray(listItems) && listItems.length > 0) {
     body.properties = {
-      list: properties.list.items.map((item: any) => ({
+      list: listItems.map((item: any) => ({
         label: item.label,
         value: item.value,
       })),
@@ -165,14 +166,11 @@ async function updateField(context: IExecuteFunctions, itemIndex: number): Promi
   }
 
   // Process properties for select/multiselect fields
-  if (
-    updateFields.properties &&
-    updateFields.properties.list &&
-    updateFields.properties.list.items &&
-    Array.isArray(updateFields.properties.list.items)
-  ) {
+  const updateListItems =
+    updateFields.properties?.list?.items?.item || updateFields.properties?.list?.items || [];
+  if (Array.isArray(updateListItems) && updateListItems.length > 0) {
     body.properties = {
-      list: updateFields.properties.list.items.map((item: any) => ({
+      list: updateListItems.map((item: any) => ({
         label: item.label,
         value: item.value,
       })),

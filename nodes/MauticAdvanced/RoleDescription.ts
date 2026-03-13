@@ -66,19 +66,6 @@ export const roleFields: INodeProperties[] = [
     description: 'Name of the role',
   },
   {
-    displayName: 'Simplify',
-    name: 'simple',
-    type: 'boolean',
-    displayOptions: {
-      show: {
-        resource: ['role'],
-        operation: ['create'],
-      },
-    },
-    default: true,
-    description: 'Whether to return a simplified version of the response instead of the raw data',
-  },
-  {
     displayName: 'Additional Fields',
     name: 'additionalFields',
     type: 'collection',
@@ -130,6 +117,7 @@ export const roleFields: INodeProperties[] = [
     displayName: 'Role ID',
     name: 'roleId',
     type: 'string',
+    required: true,
     displayOptions: {
       show: {
         operation: ['update'],
@@ -138,19 +126,6 @@ export const roleFields: INodeProperties[] = [
     },
     default: '',
     description: 'The ID of the role to update',
-  },
-  {
-    displayName: 'Simplify',
-    name: 'simple',
-    type: 'boolean',
-    displayOptions: {
-      show: {
-        resource: ['role'],
-        operation: ['update'],
-      },
-    },
-    default: true,
-    description: 'Whether to return a simplified version of the response instead of the raw data',
   },
   {
     displayName: 'Update Fields',
@@ -211,6 +186,7 @@ export const roleFields: INodeProperties[] = [
     displayName: 'Role ID',
     name: 'roleId',
     type: 'string',
+    required: true,
     displayOptions: {
       show: {
         operation: ['get'],
@@ -219,19 +195,6 @@ export const roleFields: INodeProperties[] = [
     },
     default: '',
     description: 'The ID of the role to return',
-  },
-  {
-    displayName: 'Simplify',
-    name: 'simple',
-    type: 'boolean',
-    displayOptions: {
-      show: {
-        resource: ['role'],
-        operation: ['get'],
-      },
-    },
-    default: true,
-    description: 'Whether to return a simplified version of the response instead of the raw data',
   },
 
   /* -------------------------------------------------------------------------- */
@@ -267,19 +230,6 @@ export const roleFields: INodeProperties[] = [
     default: 30,
     description:
       'Max number of results to return. If you request more than 30 records, the node will automatically use pagination to fetch up to the requested number.',
-  },
-  {
-    displayName: 'Simplify',
-    name: 'simple',
-    type: 'boolean',
-    displayOptions: {
-      show: {
-        resource: ['role'],
-        operation: ['getAll'],
-      },
-    },
-    default: true,
-    description: 'Whether to return a simplified version of the response instead of the raw data',
   },
   {
     displayName: 'Additional Fields',
@@ -349,6 +299,7 @@ export const roleFields: INodeProperties[] = [
     displayName: 'Role ID',
     name: 'roleId',
     type: 'string',
+    required: true,
     displayOptions: {
       show: {
         operation: ['delete'],
@@ -357,18 +308,5 @@ export const roleFields: INodeProperties[] = [
     },
     default: '',
     description: 'The ID of the role to delete',
-  },
-  {
-    displayName: 'Simplify',
-    name: 'simple',
-    type: 'boolean',
-    displayOptions: {
-      show: {
-        resource: ['role'],
-        operation: ['delete'],
-      },
-    },
-    default: true,
-    description: 'Whether to return a simplified version of the response instead of the raw data',
   },
 ];

@@ -75,14 +75,15 @@ async function createSegment(context: IExecuteFunctions, itemIndex: number): Pro
 async function updateSegment(context: IExecuteFunctions, itemIndex: number): Promise<any> {
   const segmentId = getRequiredParam<string>(context, 'segmentId', itemIndex);
   const createIfNotFound = getOptionalParam<boolean>(context, 'createIfNotFound', itemIndex, false);
-  const name = getRequiredParam<string>(context, 'name', itemIndex);
+  const name = getOptionalParam<string>(context, 'name', itemIndex, '');
   const additionalFields = getOptionalParam<IDataObject>(
     context,
     'additionalFields',
     itemIndex,
     {},
   );
-  const body: IDataObject = { name, ...additionalFields };
+  const body: IDataObject = { ...additionalFields };
+  if (name) body.name = name;
   const method = createIfNotFound ? 'PUT' : 'PATCH';
   const response = await makeApiRequest(context, method, `/segments/${segmentId}/edit`, body);
   return response.list;
@@ -139,6 +140,6 @@ async function addContactsToSegment(context: IExecuteFunctions, itemIndex: numbe
   const segmentId = getRequiredParam<string>(context, 'segmentId', itemIndex);
   const contactIdsString = getOptionalParam<string>(context, 'contactIds', itemIndex, '');
   const contactIds = processBatchIds(contactIdsString, context.getInputData(), 'contactId');
-  const body: IDataObject = { ids: contactIds.split(',') };
+  const body: IDataObject = { ids: contactIds.split(',').map((s) => Number(s.trim())) };
   return await makeApiRequest(context, 'POST', `/segments/${segmentId}/contacts/add`, body);
 }

@@ -62,7 +62,7 @@ async function createCompany(context: IExecuteFunctions, itemIndex: number): Pro
     companyEmail,
     fax,
     industry,
-    numberOfEmpoyees,
+    numberOfEmployees,
     phone,
     website,
     annualRevenue,
@@ -83,7 +83,7 @@ async function createCompany(context: IExecuteFunctions, itemIndex: number): Pro
   if (companyEmail) body.companyemail = companyEmail as string;
   if (fax) body.companyfax = fax as string;
   if (industry) body.companyindustry = industry as string;
-  if (numberOfEmpoyees) body.companynumber_of_employees = numberOfEmpoyees as number;
+  if (numberOfEmployees) body.companynumber_of_employees = numberOfEmployees as number;
   if (phone) body.companyphone = phone as string;
   if (website) body.companywebsite = website as string;
   if (annualRevenue) body.companyannual_revenue = annualRevenue as number;
@@ -123,7 +123,7 @@ async function updateCompany(context: IExecuteFunctions, itemIndex: number): Pro
     name,
     fax,
     industry,
-    numberOfEmpoyees,
+    numberOfEmployees,
     phone,
     website,
     annualRevenue,
@@ -145,7 +145,7 @@ async function updateCompany(context: IExecuteFunctions, itemIndex: number): Pro
   if (name) body.companyname = name as string;
   if (fax) body.companyfax = fax as string;
   if (industry) body.companyindustry = industry as string;
-  if (numberOfEmpoyees) body.companynumber_of_employees = numberOfEmpoyees as number;
+  if (numberOfEmployees) body.companynumber_of_employees = numberOfEmployees as number;
   if (phone) body.companyphone = phone as string;
   if (website) body.companywebsite = website as string;
   if (annualRevenue) body.companyannual_revenue = annualRevenue as number;
