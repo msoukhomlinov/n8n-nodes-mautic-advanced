@@ -1,6 +1,30 @@
 # Changelog
 
 
+## [1.0.0] - 2026-03-13
+
+### Added
+
+- **MauticAdvancedAiTools node** — Exposes Mautic operations as AI tools for the n8n AI Agent node and MCP Trigger (including queue mode)
+  - **Unified single-tool-per-resource architecture**: one `DynamicStructuredTool` per resource with an `operation` enum field, ensuring compatibility with queue-mode MCP Trigger where `toolName` is not injected into args
+  - **14 resources**: Contact, Company, Campaign, Email, Segment, Tag, Note, Category, Field, User, Company Contact, Campaign Contact, Contact Segment, Segment Email
+  - **70+ operations**: full CRUD, contact membership management (segments, campaigns), associations, email sending
+  - **Dual-path dispatch**: works with both AI Agent (`execute()`) and MCP Trigger (`func()`)
+  - **3-layer write safety**: `allowWriteOperations` toggle (default: read-only) enforced at UI filtering, `func()` re-check, and `execute()` re-check — write attempts when disabled return structured error, never silent fallback
+  - **LLM-optimised Zod schemas**: every field has `.describe()` guidance; `search` precedes `name` in property order to prevent LLM exact-match mistakes
+  - **Structured result envelope**: `wrapSuccess`/`wrapError` with `schemaVersion: "1"` for consistent AI consumption
+  - **Runtime `instanceof` compatibility**: `createRequire()` anchor resolution from `@langchain/classic/agents` ensures Zod and DynamicStructuredTool pass n8n's runtime checks
+  - **Mautic API v6/v7 version routing**: tag v1/v2 handling based on credential version setting
+  - **Custom field support**: JSON parameter on contact create/update for arbitrary custom fields
+  - **Null/empty guards**: `get` returns `ENTITY_NOT_FOUND`; filtered `getAll` returns `NO_RESULTS_FOUND` with filter context
+  - **n8n metadata stripping**: 8 framework-injected fields (including `root` canvas UUID) stripped before API calls
+
+### Changed
+
+- **Major version bump** to 1.0.0 reflecting AI Tools capability, API maturity, and 16 resources with 70+ operations
+- Added `zod` (`^3.22.0`) as a runtime dependency
+- Registered `MauticAdvancedAiTools.node.js` in `package.json` `n8n.nodes` array
+
 ## [0.9.0] - 2026-02-06
 ### Changed
 - **Icon**: Replaced the node icon with a distinct custom icon to differentiate from the official n8n Mautic node

@@ -1,6 +1,6 @@
 {
   "name": "n8n-nodes-mautic-advanced",
-  "version": "0.9.0",
+  "version": "1.0.0",
   "description": "Enhanced n8n node for Mautic with comprehensive API coverage including tags, campaigns, categories, and advanced contact management",
   "keywords": [
     "n8n",
@@ -48,7 +48,8 @@
     ],
     "nodes": [
       "dist/nodes/MauticAdvanced/MauticAdvanced.node.js",
-      "dist/nodes/MauticAdvanced/MauticAdvancedTrigger.node.js"
+      "dist/nodes/MauticAdvanced/MauticAdvancedTrigger.node.js",
+      "dist/nodes/MauticAdvanced/MauticAdvancedAiTools.node.js"
     ]
   },
   "devDependencies": {
@@ -67,6 +68,7 @@
   },
   "dependencies": {
     "@types/change-case": "^0.0.30",
-    "change-case": "^5.4.4"
+    "change-case": "^5.4.4",
+    "zod": "^3.22.0"
   }
 }
