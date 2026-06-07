@@ -61,7 +61,38 @@ export async function mauticApiRequest(
  * Make an API request to paginated mautic endpoint
  * and return all results
  */
-// Optional: Slightly improved error handling
+export const DEFAULT_MAUTIC_PAGE_SIZE = 100;
+
+function toPositiveInteger(value: unknown): number | undefined {
+  const numericValue =
+    typeof value === 'number' ? value : typeof value === 'string' ? Number(value) : undefined;
+
+  if (numericValue === undefined || !Number.isFinite(numericValue) || numericValue <= 0) {
+    return undefined;
+  }
+
+  return Math.floor(numericValue);
+}
+
+function getPaginationStart(value: unknown): number {
+  const start = toPositiveInteger(value);
+  return start ?? 0;
+}
+
+function getResponseItems(responseData: IDataObject, propertyName: string): IDataObject[] {
+  const responseProperty = responseData[propertyName];
+
+  if (!responseProperty || typeof responseProperty !== 'object') {
+    return [];
+  }
+
+  if (Array.isArray(responseProperty)) {
+    return responseProperty as IDataObject[];
+  }
+
+  return Object.values(responseProperty as IDataObject) as IDataObject[];
+}
+
 export async function mauticApiRequestAllItems(
   this: IHookFunctions | IExecuteFunctions | ILoadOptionsFunctions | ISupplyDataFunctions,
   propertyName: string,
@@ -72,43 +103,54 @@ export async function mauticApiRequestAllItems(
   maxResults?: number,
 ): Promise<any> {
   const returnData: IDataObject[] = [];
-  let responseData;
-  query.limit = 30;
-  query.start = 0;
+  const baseQuery: IDataObject = { ...query };
+  const requestedStart = getPaginationStart(baseQuery.start);
+  const totalLimit = toPositiveInteger(maxResults);
 
-  while (true) {
+  delete baseQuery.start;
+  delete baseQuery.limit;
+
+  let currentStart = requestedStart;
+
+  while (totalLimit === undefined || returnData.length < totalLimit) {
+    const remaining = totalLimit === undefined ? undefined : totalLimit - returnData.length;
+    const pageLimit =
+      remaining === undefined
+        ? DEFAULT_MAUTIC_PAGE_SIZE
+        : Math.min(DEFAULT_MAUTIC_PAGE_SIZE, remaining);
+    const pageQuery: IDataObject = {
+      ...baseQuery,
+      limit: pageLimit,
+      start: currentStart,
+    };
+
     try {
-      responseData = await mauticApiRequest.call(this, method, endpoint, body, query);
+      const responseData = await mauticApiRequest.call(this, method, endpoint, body, pageQuery);
 
       if (responseData.errors) {
         throw new NodeApiError(this.getNode(), responseData as JsonObject);
       }
-      const pageItems = responseData[propertyName]
-        ? Object.values(responseData[propertyName] as IDataObject[])
-        : [];
+      const pageItems = getResponseItems(responseData as IDataObject, propertyName);
+
       if (!pageItems.length) {
         break;
       }
-      if (maxResults !== undefined && returnData.length + pageItems.length > maxResults) {
-        const needed = maxResults - returnData.length;
-        returnData.push(...pageItems.slice(0, needed));
-        break;
-      } else {
-        returnData.push(...pageItems);
-      }
-      query.start = Number(query.start) + pageItems.length;
-      // If less than limit returned, no more data
-      if (pageItems.length < Number(query.limit)) {
+
+      returnData.push(...pageItems);
+
+      if (pageItems.length < pageLimit) {
         break;
       }
+
+      currentStart += pageItems.length;
     } catch (error) {
-      // Optional: Only wrap non-NodeApiError errors
       if (error instanceof NodeApiError || error instanceof NodeOperationError) {
         throw error;
       }
       throw new NodeApiError(this.getNode(), error as JsonObject);
     }
   }
+
   return returnData;
 }
 

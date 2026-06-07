@@ -29,6 +29,29 @@ export async function makeApiRequest(
   }
 }
 
+function toOptionalPositiveInteger(value: unknown): number | undefined {
+  const numericValue =
+    typeof value === 'number' ? value : typeof value === 'string' ? Number(value) : undefined;
+
+  if (numericValue === undefined || !Number.isFinite(numericValue) || numericValue <= 0) {
+    return undefined;
+  }
+
+  return Math.floor(numericValue);
+}
+
+function preparePaginatedQuery(
+  query: IDataObject,
+  explicitLimit?: number,
+): { query: IDataObject; limit?: number } {
+  const queryForPagination: IDataObject = { ...query };
+  const limit = explicitLimit ?? toOptionalPositiveInteger(queryForPagination.limit);
+
+  delete queryForPagination.limit;
+
+  return { query: queryForPagination, limit };
+}
+
 // Standardized paginated API request wrapper
 export async function makePaginatedRequest(
   context: IExecuteFunctions,
@@ -39,6 +62,8 @@ export async function makePaginatedRequest(
   query: IDataObject = {},
   limit?: number,
 ): Promise<any[]> {
+  const pagination = preparePaginatedQuery(query, limit);
+
   try {
     return await mauticApiRequestAllItems.call(
       context,
@@ -46,8 +71,8 @@ export async function makePaginatedRequest(
       method,
       endpoint,
       body,
-      query,
-      limit,
+      pagination.query,
+      pagination.limit,
     );
   } catch (error) {
     if (error instanceof NodeApiError || error instanceof NodeOperationError) {
