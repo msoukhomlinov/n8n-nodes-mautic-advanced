@@ -5,12 +5,14 @@ import type {
   IHttpRequestMethods,
   ILoadOptionsFunctions,
   IRequestOptions,
+  ISupplyDataFunctions,
   JsonObject,
 } from 'n8n-workflow';
-import { NodeApiError } from 'n8n-workflow';
+import { NodeApiError, NodeOperationError } from 'n8n-workflow';
+import { requestMauticAuthenticated } from './utils/authenticatedRequest';
 
 export async function mauticApiRequest(
-  this: IHookFunctions | IExecuteFunctions | ILoadOptionsFunctions,
+  this: IHookFunctions | IExecuteFunctions | ILoadOptionsFunctions | ISupplyDataFunctions,
   method: IHttpRequestMethods,
   endpoint: string,
 
@@ -34,27 +36,7 @@ export async function mauticApiRequest(
   }
 
   try {
-    let returnData;
-
-    if (authenticationMethod === 'credentials') {
-      const credentials = await this.getCredentials('mauticAdvancedApi');
-      const baseUrl = credentials.url as string;
-
-      options.uri = `${baseUrl.endsWith('/') ? baseUrl.slice(0, -1) : baseUrl}${options.uri}`;
-      returnData = await this.helpers.requestWithAuthentication.call(
-        this,
-        'mauticAdvancedApi',
-        options,
-      );
-    } else {
-      const credentials = await this.getCredentials('mauticAdvancedOAuth2Api');
-      const baseUrl = credentials.url as string;
-
-      options.uri = `${baseUrl.endsWith('/') ? baseUrl.slice(0, -1) : baseUrl}${options.uri}`;
-      returnData = await this.helpers.requestOAuth2.call(this, 'mauticAdvancedOAuth2Api', options, {
-        includeCredentialsOnRefreshOnBody: true,
-      });
-    }
+    const returnData = await requestMauticAuthenticated<any>(this, authenticationMethod, options);
 
     if (returnData.errors) {
       // They seem to sometimes return 200 status but still error.
@@ -68,7 +50,7 @@ export async function mauticApiRequest(
     return returnData;
   } catch (error) {
     // Preserve error details when available for better error handling
-    if (error instanceof NodeApiError) {
+    if (error instanceof NodeApiError || error instanceof NodeOperationError) {
       throw error;
     }
     throw new NodeApiError(this.getNode(), error as JsonObject);
@@ -81,7 +63,7 @@ export async function mauticApiRequest(
  */
 // Optional: Slightly improved error handling
 export async function mauticApiRequestAllItems(
-  this: IHookFunctions | IExecuteFunctions | ILoadOptionsFunctions,
+  this: IHookFunctions | IExecuteFunctions | ILoadOptionsFunctions | ISupplyDataFunctions,
   propertyName: string,
   method: IHttpRequestMethods,
   endpoint: string,
@@ -121,7 +103,7 @@ export async function mauticApiRequestAllItems(
       }
     } catch (error) {
       // Optional: Only wrap non-NodeApiError errors
-      if (error instanceof NodeApiError) {
+      if (error instanceof NodeApiError || error instanceof NodeOperationError) {
         throw error;
       }
       throw new NodeApiError(this.getNode(), error as JsonObject);

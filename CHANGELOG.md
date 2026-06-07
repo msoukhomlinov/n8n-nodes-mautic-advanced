@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.1.0] - 2026-06-07
+
+### Fixed
+
+- **OAuth2 Refresh Race**: Serialised Mautic OAuth2 API requests per credential instance to avoid concurrent refresh attempts consuming the same single-use refresh token.
+- **Theme Operations**: Routed theme upload, download, list, and delete requests through the shared authenticated request helper.
+- **AI Tools**: Removed broad request-context casts from AI tool API calls and queued OAuth2 tool requests through the shared request path.
+- **Auth Errors**: Report `invalid_grant` refresh failures as OAuth credential refresh/authentication issues instead of Mautic validation errors.
+- **Error Preservation**: Preserve n8n `NodeOperationError` instances through shared API wrappers so credential reconnect messages remain visible.
 
 ## [1.0.0] - 2026-03-13
 

@@ -4,9 +4,10 @@ import type {
   INodeExecutionData,
   IRequestOptions,
 } from 'n8n-workflow';
-import { NodeOperationError } from 'n8n-workflow';
+import { NodeApiError, NodeOperationError } from 'n8n-workflow';
 import { handleApiError, getOptionalParam, getRequiredParam } from '../utils/ApiHelpers';
 import { convertNumericStrings, wrapSingleItem } from '../utils/DataHelpers';
+import { requestMauticAuthenticated } from '../utils/authenticatedRequest';
 
 export async function executeThemeOperation(
   context: IExecuteFunctions,
@@ -59,16 +60,10 @@ async function createTheme(context: IExecuteFunctions, itemIndex: number): Promi
     0,
     'credentials',
   ) as string;
-  const credentials =
-    authenticationMethod === 'credentials'
-      ? await context.getCredentials('mauticAdvancedApi')
-      : await context.getCredentials('mauticAdvancedOAuth2Api');
-  const baseUrl = credentials.url as string;
-
   const options: IRequestOptions = {
     headers: {},
     method: 'POST',
-    uri: `${baseUrl.endsWith('/') ? baseUrl.slice(0, -1) : baseUrl}/api/themes/new`,
+    uri: '/api/themes/new',
     formData: {
       file: {
         value: Buffer.from(binaryData.data, 'base64'),
@@ -81,23 +76,11 @@ async function createTheme(context: IExecuteFunctions, itemIndex: number): Promi
   };
 
   try {
-    let returnData;
-    if (authenticationMethod === 'credentials') {
-      returnData = await context.helpers.requestWithAuthentication.call(
-        context,
-        'mauticAdvancedApi',
-        options,
-      );
-    } else {
-      returnData = await context.helpers.requestOAuth2.call(
-        context,
-        'mauticAdvancedOAuth2Api',
-        options,
-        {
-          includeCredentialsOnRefreshOnBody: true,
-        },
-      );
-    }
+    const returnData = await requestMauticAuthenticated<any>(
+      context,
+      authenticationMethod,
+      options,
+    );
 
     if (returnData.errors) {
       throw new NodeOperationError(context.getNode(), 'Theme creation failed', {
@@ -108,6 +91,10 @@ async function createTheme(context: IExecuteFunctions, itemIndex: number): Promi
 
     return returnData;
   } catch (error) {
+    if (error instanceof NodeApiError || error instanceof NodeOperationError) {
+      throw error;
+    }
+
     throw new NodeOperationError(
       context.getNode(),
       `Failed to create theme: ${(error as Error)?.message || 'Unknown error'}`,
@@ -126,38 +113,20 @@ async function getTheme(
     0,
     'credentials',
   ) as string;
-  const credentials =
-    authenticationMethod === 'credentials'
-      ? await context.getCredentials('mauticAdvancedApi')
-      : await context.getCredentials('mauticAdvancedOAuth2Api');
-  const baseUrl = credentials.url as string;
-
   const options: IRequestOptions = {
     headers: {},
     method: 'GET',
-    uri: `${baseUrl.endsWith('/') ? baseUrl.slice(0, -1) : baseUrl}/api/themes/${themeName}`,
+    uri: `/api/themes/${themeName}`,
     encoding: null,
     json: false,
   };
 
   try {
-    let response: Buffer;
-    if (authenticationMethod === 'credentials') {
-      response = (await context.helpers.requestWithAuthentication.call(
-        context,
-        'mauticAdvancedApi',
-        options,
-      )) as Buffer;
-    } else {
-      response = (await context.helpers.requestOAuth2.call(
-        context,
-        'mauticAdvancedOAuth2Api',
-        options,
-        {
-          includeCredentialsOnRefreshOnBody: true,
-        },
-      )) as Buffer;
-    }
+    const response = await requestMauticAuthenticated<Buffer>(
+      context,
+      authenticationMethod,
+      options,
+    );
 
     const binaryData = await context.helpers.prepareBinaryData(response, `${themeName}.zip`);
 
@@ -173,6 +142,10 @@ async function getTheme(
       },
     ];
   } catch (error) {
+    if (error instanceof NodeApiError || error instanceof NodeOperationError) {
+      throw error;
+    }
+
     throw new NodeOperationError(
       context.getNode(),
       `Failed to get theme: ${(error as Error)?.message || 'Unknown error'}`,
@@ -196,38 +169,20 @@ async function getAllThemes(context: IExecuteFunctions, itemIndex: number): Prom
     0,
     'credentials',
   ) as string;
-  const credentials =
-    authenticationMethod === 'credentials'
-      ? await context.getCredentials('mauticAdvancedApi')
-      : await context.getCredentials('mauticAdvancedOAuth2Api');
-  const baseUrl = credentials.url as string;
-
   const requestOptions: IRequestOptions = {
     headers: {},
     method: 'GET',
-    uri: `${baseUrl.endsWith('/') ? baseUrl.slice(0, -1) : baseUrl}/api/themes`,
+    uri: '/api/themes',
     qs: query,
     json: true,
   };
 
   try {
-    let response;
-    if (authenticationMethod === 'credentials') {
-      response = await context.helpers.requestWithAuthentication.call(
-        context,
-        'mauticAdvancedApi',
-        requestOptions,
-      );
-    } else {
-      response = await context.helpers.requestOAuth2.call(
-        context,
-        'mauticAdvancedOAuth2Api',
-        requestOptions,
-        {
-          includeCredentialsOnRefreshOnBody: true,
-        },
-      );
-    }
+    const response = await requestMauticAuthenticated<any>(
+      context,
+      authenticationMethod,
+      requestOptions,
+    );
 
     if (response.errors) {
       throw new NodeOperationError(context.getNode(), 'Failed to get themes', {
@@ -248,6 +203,10 @@ async function getAllThemes(context: IExecuteFunctions, itemIndex: number): Prom
 
     return convertNumericStrings(themesArray);
   } catch (error) {
+    if (error instanceof NodeApiError || error instanceof NodeOperationError) {
+      throw error;
+    }
+
     throw new NodeOperationError(
       context.getNode(),
       `Failed to get themes: ${(error as Error)?.message || 'Unknown error'}`,
@@ -263,37 +222,15 @@ async function deleteTheme(context: IExecuteFunctions, itemIndex: number): Promi
     0,
     'credentials',
   ) as string;
-  const credentials =
-    authenticationMethod === 'credentials'
-      ? await context.getCredentials('mauticAdvancedApi')
-      : await context.getCredentials('mauticAdvancedOAuth2Api');
-  const baseUrl = credentials.url as string;
-
   const options: IRequestOptions = {
     headers: {},
     method: 'DELETE',
-    uri: `${baseUrl.endsWith('/') ? baseUrl.slice(0, -1) : baseUrl}/api/themes/${themeName}/delete`,
+    uri: `/api/themes/${themeName}/delete`,
     json: true,
   };
 
   try {
-    let response;
-    if (authenticationMethod === 'credentials') {
-      response = await context.helpers.requestWithAuthentication.call(
-        context,
-        'mauticAdvancedApi',
-        options,
-      );
-    } else {
-      response = await context.helpers.requestOAuth2.call(
-        context,
-        'mauticAdvancedOAuth2Api',
-        options,
-        {
-          includeCredentialsOnRefreshOnBody: true,
-        },
-      );
-    }
+    const response = await requestMauticAuthenticated<any>(context, authenticationMethod, options);
 
     if (response.errors) {
       throw new NodeOperationError(context.getNode(), 'Theme deletion failed', {
@@ -304,6 +241,10 @@ async function deleteTheme(context: IExecuteFunctions, itemIndex: number): Promi
 
     return response || { success: true };
   } catch (error) {
+    if (error instanceof NodeApiError || error instanceof NodeOperationError) {
+      throw error;
+    }
+
     throw new NodeOperationError(
       context.getNode(),
       `Failed to delete theme: ${(error as Error)?.message || 'Unknown error'}`,

@@ -7,6 +7,7 @@ import {
 } from 'n8n-workflow';
 import { mauticApiRequest, mauticApiRequestAllItems } from '../GenericFunctions';
 import type { IExecuteFunctions, IDataObject } from 'n8n-workflow';
+import { isInvalidGrantError, OAUTH_REFRESH_ERROR_MESSAGE } from './authErrorHelpers';
 
 // Standardized API request wrapper with error handling
 export async function makeApiRequest(
@@ -21,7 +22,7 @@ export async function makeApiRequest(
   try {
     return await mauticApiRequest.call(context, method, endpoint, body, query, uri, headers);
   } catch (error) {
-    if (error instanceof NodeApiError) {
+    if (error instanceof NodeApiError || error instanceof NodeOperationError) {
       throw error;
     }
     throw new NodeApiError(context.getNode(), error as JsonObject);
@@ -49,7 +50,7 @@ export async function makePaginatedRequest(
       limit,
     );
   } catch (error) {
-    if (error instanceof NodeApiError) {
+    if (error instanceof NodeApiError || error instanceof NodeOperationError) {
       throw error;
     }
     throw new NodeApiError(context.getNode(), error as JsonObject);
@@ -63,22 +64,32 @@ export function handleApiError(
   operation: string,
   resource: string,
 ): INodeExecutionData[] {
+  if (error instanceof NodeOperationError) {
+    throw error;
+  }
+
+  if (isInvalidGrantError(error)) {
+    throw new NodeOperationError(context.getNode(), OAUTH_REFRESH_ERROR_MESSAGE, { itemIndex: 0 });
+  }
+
   if (error instanceof NodeApiError) {
-    if (error.httpCode === '404') {
+    const httpCode = String(error.httpCode);
+
+    if (httpCode === '404') {
       throw new NodeOperationError(
         context.getNode(),
         `${resource} not found during ${operation} operation.`,
         { itemIndex: 0 },
       );
     }
-    if (error.httpCode === '403') {
+    if (httpCode === '401' || httpCode === '403') {
       throw new NodeOperationError(
         context.getNode(),
         `Permission denied for ${operation} ${resource}. Please check your API credentials.`,
         { itemIndex: 0 },
       );
     }
-    if (error.httpCode === '400') {
+    if (httpCode === '400') {
       // Extract detailed validation errors from Mautic API response
       let errorMessage = `Invalid data provided for ${operation} ${resource}.`;
 
