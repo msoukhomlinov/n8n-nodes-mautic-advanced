@@ -37,6 +37,7 @@ import { contactSegmentFields, contactSegmentOperations } from './ContactSegment
 import { emailFields, emailOperations } from './EmailDescription';
 import { fieldFields, fieldOperations } from './FieldDescription';
 import { mauticApiRequest, mauticApiRequestAllItems } from './GenericFunctions';
+import { getCachedMauticLoadOptions } from './utils/loadOptionsCache';
 import { noteFields, noteOperations } from './NoteDescription';
 import { notificationFields, notificationOperations } from './NotificationDescription';
 import { segmentEmailFields, segmentEmailOperations } from './SegmentEmailDescription';
@@ -243,7 +244,9 @@ export class MauticAdvanced implements INodeType {
       // select them easily
       async getTags(this: ILoadOptionsFunctions): Promise<INodePropertyOptions[]> {
         const returnData: INodePropertyOptions[] = [];
-        const tags = await mauticApiRequestAllItems.call(this, 'tags', 'GET', '/tags');
+        const tags = await getCachedMauticLoadOptions(this, 'tags', () =>
+          mauticApiRequestAllItems.call(this, 'tags', 'GET', '/tags'),
+        );
         for (const tag of tags) {
           returnData.push({
             name: tag.tag,
@@ -256,7 +259,9 @@ export class MauticAdvanced implements INodeType {
       // select them easily
       async getStages(this: ILoadOptionsFunctions): Promise<INodePropertyOptions[]> {
         const returnData: INodePropertyOptions[] = [];
-        const stages = await mauticApiRequestAllItems.call(this, 'stages', 'GET', '/stages');
+        const stages = await getCachedMauticLoadOptions(this, 'stages', () =>
+          mauticApiRequestAllItems.call(this, 'stages', 'GET', '/stages'),
+        );
         for (const stage of stages) {
           returnData.push({
             name: stage.name,
@@ -269,11 +274,8 @@ export class MauticAdvanced implements INodeType {
       // select them easily
       async getCompanyFields(this: ILoadOptionsFunctions): Promise<INodePropertyOptions[]> {
         const returnData: INodePropertyOptions[] = [];
-        const fields = await mauticApiRequestAllItems.call(
-          this,
-          'fields',
-          'GET',
-          '/fields/company',
+        const fields = await getCachedMauticLoadOptions(this, 'fields:company', () =>
+          mauticApiRequestAllItems.call(this, 'fields', 'GET', '/fields/company'),
         );
         for (const field of fields) {
           returnData.push({
@@ -285,11 +287,8 @@ export class MauticAdvanced implements INodeType {
       },
       async getIndustries(this: ILoadOptionsFunctions): Promise<INodePropertyOptions[]> {
         const returnData: INodePropertyOptions[] = [];
-        const fields = await mauticApiRequestAllItems.call(
-          this,
-          'fields',
-          'GET',
-          '/fields/company',
+        const fields = await getCachedMauticLoadOptions(this, 'fields:company', () =>
+          mauticApiRequestAllItems.call(this, 'fields', 'GET', '/fields/company'),
         );
         for (const field of fields) {
           if (field.alias === 'companyindustry') {
@@ -307,6 +306,15 @@ export class MauticAdvanced implements INodeType {
       // select them easily
       async getContactFields(this: ILoadOptionsFunctions): Promise<INodePropertyOptions[]> {
         const returnData: INodePropertyOptions[] = [];
+        const seen = new Set<string>();
+        const addField = (field: INodePropertyOptions) => {
+          const value = String(field.value);
+          if (seen.has(value)) {
+            return;
+          }
+          seen.add(value);
+          returnData.push(field);
+        };
 
         // Add key system fields manually (except last_active, which is already present)
         const systemFields = [
@@ -315,17 +323,64 @@ export class MauticAdvanced implements INodeType {
           { name: 'ID', value: 'id' },
           { name: 'Owner ID', value: 'owner_id' },
         ];
-        returnData.push(...systemFields);
+        systemFields.forEach(addField);
 
         // Fetch custom and other fields from Mautic
-        const fields = await mauticApiRequestAllItems.call(
-          this,
-          'fields',
-          'GET',
-          '/fields/contact',
+        const fields = await getCachedMauticLoadOptions(this, 'fields:contact', () =>
+          mauticApiRequestAllItems.call(this, 'fields', 'GET', '/fields/contact'),
         );
         for (const field of fields) {
-          returnData.push({
+          addField({
+            name: field.label,
+            value: field.alias,
+          });
+        }
+        return returnData;
+      },
+      // Get all contact output fields, including raw top-level properties that are
+      // not returned by Mautic's contact fields endpoint.
+      async getContactFieldsToReturn(this: ILoadOptionsFunctions): Promise<INodePropertyOptions[]> {
+        const returnData: INodePropertyOptions[] = [];
+        const seen = new Set<string>();
+        const addField = (field: INodePropertyOptions) => {
+          const value = String(field.value);
+          if (seen.has(value)) {
+            return;
+          }
+          seen.add(value);
+          returnData.push(field);
+        };
+
+        const rawContactFields = [
+          { name: 'Date Added', value: 'date_added' },
+          { name: 'Date Modified', value: 'date_modified' },
+          { name: 'ID', value: 'id' },
+          { name: 'Owner ID', value: 'owner_id' },
+          { name: 'Color', value: 'color' },
+          { name: 'Created By', value: 'createdBy' },
+          { name: 'Created By User', value: 'createdByUser' },
+          { name: 'Date Identified', value: 'date_identified' },
+          { name: 'Do Not Contact', value: 'doNotContact' },
+          { name: 'Frequency Rules', value: 'frequencyRules' },
+          { name: 'IP Addresses', value: 'ipAddresses' },
+          { name: 'Is Published', value: 'isPublished' },
+          { name: 'Last Active', value: 'last_active' },
+          { name: 'Modified By', value: 'modifiedBy' },
+          { name: 'Modified By User', value: 'modifiedByUser' },
+          { name: 'Owner', value: 'owner' },
+          { name: 'Points', value: 'points' },
+          { name: 'Preferred Profile Image', value: 'preferredProfileImage' },
+          { name: 'Stage', value: 'stage' },
+          { name: 'Tags', value: 'tags' },
+          { name: 'UTM Tags', value: 'utmtags' },
+        ];
+        rawContactFields.forEach(addField);
+
+        const fields = await getCachedMauticLoadOptions(this, 'fields:contact', () =>
+          mauticApiRequestAllItems.call(this, 'fields', 'GET', '/fields/contact'),
+        );
+        for (const field of fields) {
+          addField({
             name: field.label,
             value: field.alias,
           });
@@ -336,7 +391,9 @@ export class MauticAdvanced implements INodeType {
       // select them easily
       async getSegments(this: ILoadOptionsFunctions): Promise<INodePropertyOptions[]> {
         const returnData: INodePropertyOptions[] = [];
-        const segments = await mauticApiRequestAllItems.call(this, 'lists', 'GET', '/segments');
+        const segments = await getCachedMauticLoadOptions(this, 'segments', () =>
+          mauticApiRequestAllItems.call(this, 'lists', 'GET', '/segments'),
+        );
         for (const segment of segments) {
           returnData.push({
             name: segment.name,
@@ -348,7 +405,9 @@ export class MauticAdvanced implements INodeType {
       // Get all the available segments (by alias) for search filtering
       async getSegmentAliases(this: ILoadOptionsFunctions): Promise<INodePropertyOptions[]> {
         const returnData: INodePropertyOptions[] = [];
-        const segments = await mauticApiRequestAllItems.call(this, 'lists', 'GET', '/segments');
+        const segments = await getCachedMauticLoadOptions(this, 'segments', () =>
+          mauticApiRequestAllItems.call(this, 'lists', 'GET', '/segments'),
+        );
         for (const segment of segments) {
           // Use alias if available, otherwise skip (alias is required for search syntax)
           const alias = segment.alias || segment.id?.toString();
@@ -381,11 +440,8 @@ export class MauticAdvanced implements INodeType {
       // select them easily
       async getCampaigns(this: ILoadOptionsFunctions): Promise<INodePropertyOptions[]> {
         const returnData: INodePropertyOptions[] = [];
-        const campaings = await mauticApiRequestAllItems.call(
-          this,
-          'campaigns',
-          'GET',
-          '/campaigns',
+        const campaings = await getCachedMauticLoadOptions(this, 'campaigns', () =>
+          mauticApiRequestAllItems.call(this, 'campaigns', 'GET', '/campaigns'),
         );
         for (const campaign of campaings) {
           returnData.push({
@@ -399,7 +455,9 @@ export class MauticAdvanced implements INodeType {
       // select them easily
       async getEmails(this: ILoadOptionsFunctions): Promise<INodePropertyOptions[]> {
         const returnData: INodePropertyOptions[] = [];
-        const emails = await mauticApiRequestAllItems.call(this, 'emails', 'GET', '/emails');
+        const emails = await getCachedMauticLoadOptions(this, 'emails', () =>
+          mauticApiRequestAllItems.call(this, 'emails', 'GET', '/emails'),
+        );
         for (const email of emails) {
           returnData.push({
             name: email.name,
@@ -412,7 +470,9 @@ export class MauticAdvanced implements INodeType {
       // select them easily
       async getSegmentEmails(this: ILoadOptionsFunctions): Promise<INodePropertyOptions[]> {
         const returnData: INodePropertyOptions[] = [];
-        const emails = await mauticApiRequestAllItems.call(this, 'emails', 'GET', '/emails');
+        const emails = await getCachedMauticLoadOptions(this, 'emails', () =>
+          mauticApiRequestAllItems.call(this, 'emails', 'GET', '/emails'),
+        );
         for (const email of emails) {
           if (email.emailType === 'list') {
             returnData.push({
@@ -427,7 +487,9 @@ export class MauticAdvanced implements INodeType {
       // select them easily
       async getCampaignEmails(this: ILoadOptionsFunctions): Promise<INodePropertyOptions[]> {
         const returnData: INodePropertyOptions[] = [];
-        const emails = await mauticApiRequestAllItems.call(this, 'emails', 'GET', '/emails');
+        const emails = await getCachedMauticLoadOptions(this, 'emails', () =>
+          mauticApiRequestAllItems.call(this, 'emails', 'GET', '/emails'),
+        );
         for (const email of emails) {
           if (email.emailType === 'template') {
             returnData.push({
@@ -442,11 +504,8 @@ export class MauticAdvanced implements INodeType {
       // select them easily
       async getEmailCategories(this: ILoadOptionsFunctions): Promise<INodePropertyOptions[]> {
         const returnData: INodePropertyOptions[] = [];
-        const categories = await mauticApiRequestAllItems.call(
-          this,
-          'categories',
-          'GET',
-          '/categories',
+        const categories = await getCachedMauticLoadOptions(this, 'categories', () =>
+          mauticApiRequestAllItems.call(this, 'categories', 'GET', '/categories'),
         );
         for (const category of categories) {
           // Filter for email bundle categories
@@ -463,7 +522,9 @@ export class MauticAdvanced implements INodeType {
       // select them easily
       async getForms(this: ILoadOptionsFunctions): Promise<INodePropertyOptions[]> {
         const returnData: INodePropertyOptions[] = [];
-        const forms = await mauticApiRequestAllItems.call(this, 'forms', 'GET', '/forms');
+        const forms = await getCachedMauticLoadOptions(this, 'forms', () =>
+          mauticApiRequestAllItems.call(this, 'forms', 'GET', '/forms'),
+        );
         for (const form of forms) {
           returnData.push({
             name: form.name,
@@ -476,7 +537,9 @@ export class MauticAdvanced implements INodeType {
       // select them easily
       async getAssets(this: ILoadOptionsFunctions): Promise<INodePropertyOptions[]> {
         const returnData: INodePropertyOptions[] = [];
-        const assets = await mauticApiRequestAllItems.call(this, 'assets', 'GET', '/assets');
+        const assets = await getCachedMauticLoadOptions(this, 'assets', () =>
+          mauticApiRequestAllItems.call(this, 'assets', 'GET', '/assets'),
+        );
         for (const asset of assets) {
           returnData.push({
             name: asset.title,

@@ -8,7 +8,12 @@ import type {
   IRequestOptions,
   ISupplyDataFunctions,
 } from 'n8n-workflow';
-import { runWithCredentialLock } from './oauthRequestQueue';
+import {
+  runTrackedCredentialRequest,
+  runWithCredentialLock,
+  waitForTrackedCredentialRequests,
+} from './oauthRequestQueue';
+import { isInvalidGrantError } from './authErrorHelpers';
 
 export type MauticRequestContext =
   | IHookFunctions
@@ -79,6 +84,21 @@ function getOAuthCredentialQueueKey(node: INode): string {
   return `mauticAdvancedOAuth2Api:${keyPart}`;
 }
 
+async function requestOAuth2WithMauticOptions<T>(
+  context: MauticRequestContext,
+  helperContext: AuthenticatedRequestContext,
+  requestOptions: IRequestOptions,
+): Promise<T> {
+  return (await helperContext.helpers.requestOAuth2.call(
+    context,
+    'mauticAdvancedOAuth2Api',
+    requestOptions,
+    {
+      includeCredentialsOnRefreshOnBody: true,
+    },
+  )) as T;
+}
+
 export async function requestMauticAuthenticated<T = unknown>(
   context: MauticRequestContext,
   authenticationMethod: string,
@@ -100,14 +120,20 @@ export async function requestMauticAuthenticated<T = unknown>(
 
   const queueKey = getOAuthCredentialQueueKey(context.getNode());
 
-  return await runWithCredentialLock(queueKey, async () => {
-    return (await helperContext.helpers.requestOAuth2.call(
-      context,
-      'mauticAdvancedOAuth2Api',
-      requestOptions,
-      {
-        includeCredentialsOnRefreshOnBody: true,
-      },
-    )) as T;
-  });
+  try {
+    return await runTrackedCredentialRequest(queueKey, async () =>
+      requestOAuth2WithMauticOptions<T>(context, helperContext, requestOptions),
+    );
+  } catch (error) {
+    if (!isInvalidGrantError(error)) {
+      throw error;
+    }
+
+    await waitForTrackedCredentialRequests(queueKey);
+
+    return await runWithCredentialLock(queueKey, async () => {
+      await waitForTrackedCredentialRequests(queueKey);
+      return await requestOAuth2WithMauticOptions<T>(context, helperContext, requestOptions);
+    });
+  }
 }

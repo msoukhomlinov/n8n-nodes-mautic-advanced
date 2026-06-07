@@ -1409,7 +1409,7 @@ export const contactFields: INodeProperties[] = [
         name: 'fieldsToReturn',
         type: 'multiOptions',
         typeOptions: {
-          loadOptionsMethod: 'getContactFields',
+          loadOptionsMethod: 'getContactFieldsToReturn',
         },
         default: [],
         description:
@@ -1510,7 +1510,7 @@ export const contactFields: INodeProperties[] = [
         name: 'fieldsToReturn',
         type: 'multiOptions',
         typeOptions: {
-          loadOptionsMethod: 'getContactFields',
+          loadOptionsMethod: 'getContactFieldsToReturn',
         },
         default: [],
         description:

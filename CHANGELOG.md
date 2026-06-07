@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.2.0] - 2026-06-07
+
+### Fixed
+
+- **Contact Fields to Return**: Fixed Contact Get and Get Many field selection so selected fields are honoured in both raw and simplified output modes instead of returning the full contact object.
+- **Contact Field Options**: Added raw contact output fields, including `tags`, `doNotContact`, and `ipAddresses`, to Contact Get/Get Many Fields to Return without adding those raw-only fields to custom-field or where-condition dropdowns.
+- **OAuth Request Lock Scope**: Narrowed OAuth request serialization so ordinary API calls can run concurrently while invalid-grant recovery retries remain credential-scoped.
+
+### Changed
+
+- **API Read Performance**: Increased internal Mautic read pagination page size, prevented pagination helpers from mutating caller query objects, cached repeated dynamic option loads per credential, and fixed Contact DNC Return All pagination.
+
 ## [1.1.0] - 2026-06-07
 
 ### Fixed

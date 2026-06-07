@@ -28,26 +28,91 @@ export function processContactFields(
   options: { rawData?: boolean; fieldsToReturn?: string[] },
   fieldsToReturn?: string[],
 ): any[] {
-  if (options.rawData === true) {
-    return responseData;
-  }
-  const processedData = Array.isArray(responseData)
-    ? responseData.map((item: any) => item.fields?.all || item)
-    : [responseData.fields?.all || responseData];
+  const sourceData = Array.isArray(responseData) ? responseData : [responseData];
+  const filterFields = fieldsToReturn ?? options.fieldsToReturn;
 
-  const filterFields = fieldsToReturn || options.fieldsToReturn;
+  if (options.rawData === true) {
+    if (Array.isArray(filterFields) && filterFields.length > 0) {
+      return sourceData.map((item: IDataObject) => filterContactFields(item, item, filterFields));
+    }
+    return sourceData;
+  }
+
+  const processedData = sourceData.map((item: any) => item.fields?.all || item);
+
   if (Array.isArray(filterFields) && filterFields.length > 0) {
-    return processedData.map((item: IDataObject) => {
-      const filtered: IDataObject = {};
-      for (const field of filterFields) {
-        if (Object.prototype.hasOwnProperty.call(item, field)) {
-          filtered[field] = item[field];
-        }
-      }
-      return filtered;
-    });
+    return processedData.map((item: IDataObject, index: number) =>
+      filterContactFields(item, sourceData[index], filterFields),
+    );
   }
   return processedData;
+}
+
+function filterContactFields(
+  preferredSource: IDataObject,
+  originalSource: IDataObject,
+  filterFields: string[],
+): IDataObject {
+  const filtered: IDataObject = {};
+  for (const field of filterFields) {
+    const preferredLookup = readContactField(preferredSource, field);
+    const lookup = preferredLookup.found
+      ? preferredLookup
+      : readContactField(originalSource, field);
+    if (lookup.found && lookup.value !== undefined) {
+      filtered[field] = lookup.value;
+    }
+  }
+  return filtered;
+}
+
+function readContactField(
+  source: IDataObject | undefined,
+  field: string,
+): { found: boolean; value?: unknown } {
+  if (!source) {
+    return { found: false };
+  }
+  if (Object.prototype.hasOwnProperty.call(source, field)) {
+    return { found: true, value: source[field] };
+  }
+  const rawField = readRawContactFieldAlias(source, field);
+  if (rawField.found) {
+    return rawField;
+  }
+  const fieldsAll = (source.fields as IDataObject | undefined)?.all as IDataObject | undefined;
+  if (fieldsAll && Object.prototype.hasOwnProperty.call(fieldsAll, field)) {
+    return { found: true, value: fieldsAll[field] };
+  }
+  return { found: false };
+}
+
+function readRawContactFieldAlias(
+  source: IDataObject,
+  field: string,
+): { found: boolean; value?: unknown } {
+  const rawAliasMap: Record<string, string[]> = {
+    date_added: ['dateAdded'],
+    date_identified: ['dateIdentified'],
+    date_modified: ['dateModified'],
+    last_active: ['lastActive'],
+  };
+
+  for (const alias of rawAliasMap[field] || []) {
+    if (Object.prototype.hasOwnProperty.call(source, alias)) {
+      return { found: true, value: source[alias] };
+    }
+  }
+
+  if (field === 'owner_id' && Object.prototype.hasOwnProperty.call(source, 'owner')) {
+    const owner = source.owner as IDataObject | string | number | null;
+    if (owner && typeof owner === 'object' && Object.prototype.hasOwnProperty.call(owner, 'id')) {
+      return { found: true, value: owner.id };
+    }
+    return { found: true, value: owner };
+  }
+
+  return { found: false };
 }
 
 // Validate and parse JSON input parameters

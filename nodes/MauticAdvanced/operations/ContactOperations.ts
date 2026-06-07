@@ -15,6 +15,7 @@ import {
   wrapSingleItem,
   convertNumericStrings,
 } from '../utils/DataHelpers';
+import { DEFAULT_MAUTIC_PAGE_SIZE } from '../GenericFunctions';
 
 export async function executeContactOperation(
   context: IExecuteFunctions,
@@ -283,12 +284,8 @@ async function getAllContacts(context: IExecuteFunctions, itemIndex: number): Pr
   const anyDncOnly = (options as any).anyDncOnly === true;
   const useDncPostFilter = emailDncOnly || smsDncOnly || anyDncOnly;
   if (useDncPostFilter) {
-    responseData = await getContactsWithDncFilter(
-      context,
-      qs,
-      options,
-      returnAll ? undefined : (options as any).limit,
-    );
+    const limit = returnAll ? undefined : getOptionalParam(context, 'limit', itemIndex, 30);
+    responseData = await getContactsWithDncFilter(context, qs, options, limit);
   } else {
     if (returnAll) {
       responseData = await makePaginatedRequest(context, 'contacts', 'GET', '/contacts', {}, qs);
@@ -754,31 +751,44 @@ async function getContactsWithDncFilter(
   const emailDncOnly = options.emailDncOnly === true;
   const smsDncOnly = options.smsDncOnly === true;
   const anyDncOnly = options.anyDncOnly === true;
-  const start = qs.start || 0;
-  const finalLimit = limit || qs.limit || 30;
+  const requestedStart = Number(qs.start ?? 0);
+  const maxResults = typeof limit === 'number' && limit > 0 ? Math.floor(limit) : undefined;
   const contacts: any[] = [];
-  let remaining = finalLimit;
-  let currentStart = start;
-  while (remaining > 0) {
-    const pageLimit = Math.min(remaining, 30);
+  let remaining = maxResults;
+  let currentStart = Number.isFinite(requestedStart) && requestedStart > 0 ? requestedStart : 0;
+
+  while (remaining === undefined || remaining > 0) {
+    const pageLimit =
+      remaining === undefined
+        ? DEFAULT_MAUTIC_PAGE_SIZE
+        : Math.min(remaining, DEFAULT_MAUTIC_PAGE_SIZE);
     const pageQs = { ...qs, start: currentStart, limit: pageLimit };
     const pageResponse = await makeApiRequest(context, 'GET', '/contacts', {}, pageQs);
     const pageContacts = pageResponse.contacts ? Object.values(pageResponse.contacts) : [];
+
     const filtered = pageContacts.filter((contact: any) => {
       const dnc = contact.doNotContact || [];
       const hasEmailDnc = dnc.some((d: any) => d.channel === 'email');
       const hasSmsDnc = dnc.some((d: any) => d.channel === 'sms');
+
       if (emailDncOnly) return hasEmailDnc;
       if (smsDncOnly) return hasSmsDnc;
       if (anyDncOnly) return hasEmailDnc || hasSmsDnc;
       return true;
     });
-    const toAdd = filtered.slice(0, remaining);
+
+    const toAdd = remaining === undefined ? filtered : filtered.slice(0, remaining);
     contacts.push(...toAdd);
+
+    if (remaining !== undefined) {
+      remaining -= toAdd.length;
+    }
+
     if (pageContacts.length < pageLimit) break;
-    remaining -= toAdd.length;
-    currentStart += pageLimit;
+
+    currentStart += pageContacts.length;
   }
+
   return contacts;
 }
 
