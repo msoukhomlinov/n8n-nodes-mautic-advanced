@@ -7,6 +7,7 @@ import {
   getOptionalParam,
   getRequiredParam,
 } from '../utils/ApiHelpers';
+import { getMauticVersion } from '../GenericFunctions';
 import { buildQueryFromOptions, wrapSingleItem, convertNumericStrings } from '../utils/DataHelpers';
 
 export async function executeCompanyOperation(
@@ -48,14 +49,9 @@ export async function executeCompanyOperation(
 async function createCompany(context: IExecuteFunctions, itemIndex: number): Promise<any> {
   const simple = getOptionalParam<boolean>(context, 'simple', itemIndex, false);
   const name = getRequiredParam<string>(context, 'name', itemIndex);
-  const body: IDataObject = { companyname: name };
+  const mauticVersion = await getMauticVersion(context);
 
-  const additionalFields = getOptionalParam<IDataObject>(
-    context,
-    'additionalFields',
-    itemIndex,
-    {},
-  );
+  const additionalFields = getOptionalParam<IDataObject>(context, 'additionalFields', itemIndex, {});
   const {
     addressUi,
     customFieldsUi,
@@ -71,25 +67,47 @@ async function createCompany(context: IExecuteFunctions, itemIndex: number): Pro
     ...rest
   } = additionalFields as any;
 
-  if (addressUi?.addressValues) {
-    const { addressValues } = addressUi as { addressValues: IDataObject };
-    body.companyaddress1 = addressValues.address1 as string;
-    body.companyaddress2 = addressValues.address2 as string;
-    body.companycity = addressValues.city as string;
-    body.companystate = addressValues.state as string;
-    body.companycountry = addressValues.country as string;
-    body.companyzipcode = addressValues.zipCode as string;
-  }
+  const body: IDataObject = {};
 
-  if (companyEmail) body.companyemail = companyEmail as string;
-  if (fax) body.companyfax = fax as string;
-  if (industry) body.companyindustry = industry as string;
-  if (numberOfEmployees) body.companynumber_of_employees = numberOfEmployees as number;
-  if (owner) body.owner = owner as number;
-  if (phone) body.companyphone = phone as string;
-  if (website) body.companywebsite = website as string;
-  if (annualRevenue) body.companyannual_revenue = annualRevenue as number;
-  if (description) body.companydescription = description as string;
+  if (mauticVersion === 'v7') {
+    body.name = name;
+    if (addressUi?.addressValues) {
+      const { addressValues } = addressUi as { addressValues: IDataObject };
+      if (addressValues.address1) body.address1 = addressValues.address1 as string;
+      if (addressValues.address2) body.address2 = addressValues.address2 as string;
+      if (addressValues.city) body.city = addressValues.city as string;
+      if (addressValues.state) body.state = addressValues.state as string;
+      if (addressValues.country) body.country = addressValues.country as string;
+      if (addressValues.zipCode) body.zipcode = addressValues.zipCode as string;
+    }
+    if (companyEmail) body.email = companyEmail as string;
+    if (industry) body.industry = industry as string;
+    if (owner) body.owner = `/api/v2/users/${owner}`;
+    if (phone) body.phone = phone as string;
+    if (website) body.website = website as string;
+    if (description) body.description = description as string;
+    // fax, numberOfEmployees, annualRevenue not in v7 Company entity write group — omitted
+  } else {
+    body.companyname = name;
+    if (addressUi?.addressValues) {
+      const { addressValues } = addressUi as { addressValues: IDataObject };
+      body.companyaddress1 = addressValues.address1 as string;
+      body.companyaddress2 = addressValues.address2 as string;
+      body.companycity = addressValues.city as string;
+      body.companystate = addressValues.state as string;
+      body.companycountry = addressValues.country as string;
+      body.companyzipcode = addressValues.zipCode as string;
+    }
+    if (companyEmail) body.companyemail = companyEmail as string;
+    if (fax) body.companyfax = fax as string;
+    if (industry) body.companyindustry = industry as string;
+    if (numberOfEmployees) body.companynumber_of_employees = numberOfEmployees as number;
+    if (owner) body.owner = owner as number;
+    if (phone) body.companyphone = phone as string;
+    if (website) body.companywebsite = website as string;
+    if (annualRevenue) body.companyannual_revenue = annualRevenue as number;
+    if (description) body.companydescription = description as string;
+  }
 
   if ((customFieldsUi as any)?.customFieldValues) {
     const { customFieldValues } = customFieldsUi as {
@@ -104,8 +122,17 @@ async function createCompany(context: IExecuteFunctions, itemIndex: number): Pro
 
   Object.assign(body, rest);
 
-  const response = await makeApiRequest(context, 'POST', '/companies/new', body);
-  let result = response.company;
+  let result: any;
+  if (mauticVersion === 'v7') {
+    const response = await makeApiRequest(context, 'POST', '/v2/companies', body, {}, undefined, {
+      'Content-Type': 'application/json',
+    });
+    result = response;
+  } else {
+    const response = await makeApiRequest(context, 'POST', '/companies/new', body);
+    result = response.company;
+  }
+
   if (simple) {
     result = toSimpleCompany(result);
   }
