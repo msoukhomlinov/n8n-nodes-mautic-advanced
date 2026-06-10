@@ -793,7 +793,7 @@ async function getContactsWithDncFilter(
 }
 
 async function getContactOwners(context: IExecuteFunctions): Promise<any> {
-  const response = await makeApiRequest(context, 'GET', '/contacts/list/owners');
+  const response = await makeApiRequest(context, 'GET', '/users');
   return convertNumericStrings(response);
 }
 

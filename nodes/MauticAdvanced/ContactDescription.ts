@@ -449,11 +449,15 @@ export const contactFields: INodeProperties[] = [
         default: '',
       },
       {
-        displayName: 'Owner ID',
-        name: 'ownerId',
-        type: 'string',
+        displayName: 'Owner Name or ID',
+        name: 'owner',
+        type: 'options',
+        description:
+          'User to assign as contact owner. Choose from the list, or specify an ID using an <a href="https://docs.n8n.io/code/expressions/">expression</a>.',
+        typeOptions: {
+          loadOptionsMethod: 'getOwners',
+        },
         default: '',
-        description: 'ID of a Mautic user to assign this contact to',
       },
       {
         displayName: 'Phone',
@@ -1015,16 +1019,20 @@ export const contactFields: INodeProperties[] = [
         default: '',
       },
       {
-        displayName: 'Owner ID',
-        name: 'ownerId',
-        type: 'string',
+        displayName: 'Owner Name or ID',
+        name: 'owner',
+        type: 'options',
+        description:
+          'User to assign as contact owner. Choose from the list, or specify an ID using an <a href="https://docs.n8n.io/code/expressions/">expression</a>.',
+        typeOptions: {
+          loadOptionsMethod: 'getOwners',
+        },
         displayOptions: {
           show: {
             '/jsonParameters': [false],
           },
         },
         default: '',
-        description: 'ID of a Mautic user to assign this contact to',
       },
       {
         displayName: 'Phone',

@@ -1,5 +1,20 @@
 # Changelog
 
+## [1.2.1] - 2026-06-10
+
+### Added
+
+- **Company Owner**: Exposed `Owner Name or ID` field on Company Create and Company Update operations. Populates from the Mautic user list (same loader as Contact owner).
+
+### Fixed
+
+- **Contact Owner (broken field)**: `Owner ID` field on Contact Create and Update was silently dropped — the description field was named `ownerId` but the operation read `owner`. Renamed field to `owner` and upgraded to a user-list dropdown (`Owner Name or ID`) so it now maps correctly to `body.owner`.
+
+### Changed
+
+- **Company simple output**: `Simplify` mode now returns `id` and `owner` alongside custom fields instead of bare `fields.all`. Applies to Get, Get Many, Create, Update, and Delete.
+- **Contact simple output**: `Simplify` mode now includes `id` and `owner` at the top level alongside `fields.all`.
+
 ## [1.2.0] - 2026-06-07
 
 ### Fixed

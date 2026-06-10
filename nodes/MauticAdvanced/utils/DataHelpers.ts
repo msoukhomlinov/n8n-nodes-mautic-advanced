@@ -38,7 +38,11 @@ export function processContactFields(
     return sourceData;
   }
 
-  const processedData = sourceData.map((item: any) => item.fields?.all || item);
+  const processedData = sourceData.map((item: any) => {
+    const all = item.fields?.all;
+    if (!all) return item;
+    return { id: item.id, owner: item.owner ?? null, ...all };
+  });
 
   if (Array.isArray(filterFields) && filterFields.length > 0) {
     return processedData.map((item: IDataObject, index: number) =>

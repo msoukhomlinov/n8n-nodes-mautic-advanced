@@ -63,6 +63,7 @@ async function createCompany(context: IExecuteFunctions, itemIndex: number): Pro
     fax,
     industry,
     numberOfEmployees,
+    owner,
     phone,
     website,
     annualRevenue,
@@ -84,6 +85,7 @@ async function createCompany(context: IExecuteFunctions, itemIndex: number): Pro
   if (fax) body.companyfax = fax as string;
   if (industry) body.companyindustry = industry as string;
   if (numberOfEmployees) body.companynumber_of_employees = numberOfEmployees as number;
+  if (owner) body.owner = owner as number;
   if (phone) body.companyphone = phone as string;
   if (website) body.companywebsite = website as string;
   if (annualRevenue) body.companyannual_revenue = annualRevenue as number;
@@ -105,7 +107,7 @@ async function createCompany(context: IExecuteFunctions, itemIndex: number): Pro
   const response = await makeApiRequest(context, 'POST', '/companies/new', body);
   let result = response.company;
   if (simple) {
-    result = result.fields.all;
+    result = toSimpleCompany(result);
   }
   return result;
 }
@@ -124,6 +126,7 @@ async function updateCompany(context: IExecuteFunctions, itemIndex: number): Pro
     fax,
     industry,
     numberOfEmployees,
+    owner,
     phone,
     website,
     annualRevenue,
@@ -146,6 +149,7 @@ async function updateCompany(context: IExecuteFunctions, itemIndex: number): Pro
   if (fax) body.companyfax = fax as string;
   if (industry) body.companyindustry = industry as string;
   if (numberOfEmployees) body.companynumber_of_employees = numberOfEmployees as number;
+  if (owner) body.owner = owner as number;
   if (phone) body.companyphone = phone as string;
   if (website) body.companywebsite = website as string;
   if (annualRevenue) body.companyannual_revenue = annualRevenue as number;
@@ -167,7 +171,7 @@ async function updateCompany(context: IExecuteFunctions, itemIndex: number): Pro
   const response = await makeApiRequest(context, 'PATCH', `/companies/${companyId}/edit`, body);
   let result = response.company;
   if (simple) {
-    result = result.fields.all;
+    result = toSimpleCompany(result);
   }
   return result;
 }
@@ -178,7 +182,7 @@ async function getCompany(context: IExecuteFunctions, itemIndex: number): Promis
   const response = await makeApiRequest(context, 'GET', `/companies/${companyId}`);
   let result = response.company;
   if (simple) {
-    result = result.fields.all;
+    result = toSimpleCompany(result);
   }
   return convertNumericStrings(result);
 }
@@ -215,7 +219,7 @@ async function getAllCompanies(context: IExecuteFunctions, itemIndex: number): P
     responseData = (response.companies ? Object.values(response.companies) : []) as any[];
   }
   if (simple) {
-    responseData = responseData.map((item: any) => item.fields.all);
+    responseData = responseData.map((item: any) => toSimpleCompany(item));
   }
   return convertNumericStrings(responseData);
 }
@@ -226,7 +230,15 @@ async function deleteCompany(context: IExecuteFunctions, itemIndex: number): Pro
   const response = await makeApiRequest(context, 'DELETE', `/companies/${companyId}/delete`);
   let result = response.company;
   if (simple) {
-    result = result.fields.all;
+    result = toSimpleCompany(result);
   }
   return result;
+}
+
+function toSimpleCompany(company: any): any {
+  return {
+    id: company.id,
+    owner: company.owner ?? null,
+    ...company.fields.all,
+  };
 }

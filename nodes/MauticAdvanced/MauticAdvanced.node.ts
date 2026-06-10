@@ -423,16 +423,13 @@ export class MauticAdvanced implements INodeType {
       // Get all the available owners (users) for filtering
       async getOwners(this: ILoadOptionsFunctions): Promise<INodePropertyOptions[]> {
         const returnData: INodePropertyOptions[] = [];
-        const response = await mauticApiRequest.call(this, 'GET', '/contacts/list/owners');
-        const owners = response || [];
-        for (const owner of owners) {
-          returnData.push({
-            name:
-              `${owner.firstName || ''} ${owner.lastName || ''}`.trim() ||
-              owner.username ||
-              `User ${owner.id}`,
-            value: owner.id,
-          });
+        const response = await mauticApiRequest.call(this, 'GET', '/users');
+        const users = response?.users ? Object.values(response.users) : [];
+        for (const user of users as any[]) {
+          const fullName = `${user.firstName || ''} ${user.lastName || ''}`.trim();
+          const display = fullName || user.username || `User ${user.id}`;
+          const label = user.email ? `${display} (${user.email})` : display;
+          returnData.push({ name: label, value: user.id });
         }
         return returnData;
       },
