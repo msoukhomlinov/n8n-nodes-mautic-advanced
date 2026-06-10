@@ -236,9 +236,19 @@ async function deleteCompany(context: IExecuteFunctions, itemIndex: number): Pro
 }
 
 function toSimpleCompany(company: any): any {
+  if (company?.fields?.all) {
+    // v1: fields nested under company.fields.all
+    return {
+      id: company.id,
+      owner: company.owner ?? null,
+      ...company.fields.all,
+    };
+  }
+  // v7: fields are at the top level; owner is a User object
+  const { id, owner, score, socialCache, dateAdded, dateModified, isPublished, ...fields } = company;
   return {
-    id: company.id,
-    owner: company.owner ?? null,
-    ...company.fields.all,
+    id,
+    owner: owner ?? null,
+    ...fields,
   };
 }
