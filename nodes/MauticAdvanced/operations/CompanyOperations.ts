@@ -51,7 +51,12 @@ async function createCompany(context: IExecuteFunctions, itemIndex: number): Pro
   const name = getRequiredParam<string>(context, 'name', itemIndex);
   const mauticVersion = await getMauticVersion(context);
 
-  const additionalFields = getOptionalParam<IDataObject>(context, 'additionalFields', itemIndex, {});
+  const additionalFields = getOptionalParam<IDataObject>(
+    context,
+    'additionalFields',
+    itemIndex,
+    {},
+  );
   const {
     addressUi,
     customFieldsUi,
@@ -228,12 +233,7 @@ async function updateCompany(context: IExecuteFunctions, itemIndex: number): Pro
     );
     result = response;
   } else {
-    const response = await makeApiRequest(
-      context,
-      'PATCH',
-      `/companies/${companyId}/edit`,
-      body,
-    );
+    const response = await makeApiRequest(context, 'PATCH', `/companies/${companyId}/edit`, body);
     result = response.company;
   }
 
@@ -312,7 +312,8 @@ function toSimpleCompany(company: any): any {
     };
   }
   // v7: fields are at the top level; owner is a User object
-  const { id, owner, score, socialCache, dateAdded, dateModified, isPublished, ...fields } = company;
+  const { id, owner, score, socialCache, dateAdded, dateModified, isPublished, ...fields } =
+    company;
   return {
     id,
     owner: owner ?? null,
