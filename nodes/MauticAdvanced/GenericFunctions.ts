@@ -11,6 +11,26 @@ import type {
 import { NodeApiError, NodeOperationError } from 'n8n-workflow';
 import { requestMauticAuthenticated } from './utils/authenticatedRequest';
 
+export type MauticVersion = 'v6' | 'v7';
+
+export async function getMauticVersion(context: IExecuteFunctions): Promise<MauticVersion> {
+  const authenticationMethod = context.getNodeParameter(
+    'authentication',
+    0,
+    'credentials',
+  ) as string;
+
+  if (authenticationMethod === 'credentials') {
+    const credentials = await context.getCredentials('mauticAdvancedApi');
+    const version = (credentials.mauticVersion as string) || 'v6';
+    return version === 'v7' ? 'v7' : 'v6';
+  }
+
+  const credentials = await context.getCredentials('mauticAdvancedOAuth2Api');
+  const version = (credentials.mauticVersion as string) || 'v6';
+  return version === 'v7' ? 'v7' : 'v6';
+}
+
 export async function mauticApiRequest(
   this: IHookFunctions | IExecuteFunctions | ILoadOptionsFunctions | ISupplyDataFunctions,
   method: IHttpRequestMethods,
