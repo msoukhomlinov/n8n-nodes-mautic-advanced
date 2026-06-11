@@ -16,12 +16,28 @@ export type MauticVersion = 'v6' | 'v7';
 const versionCache = new Map<string, { version: MauticVersion; expiresAt: number }>();
 const VERSION_CACHE_TTL_MS = 5 * 60 * 1000;
 
+function normalizeInstanceUrl(raw: string): string {
+  const trimmed = raw.trim();
+  if (!trimmed) return '';
+  try {
+    const u = new URL(trimmed);
+    u.protocol = u.protocol.toLowerCase();
+    u.hostname = u.hostname.toLowerCase();
+    u.hash = '';
+    u.search = '';
+    u.pathname = u.pathname.replace(/\/+$/, '');
+    return u.toString().replace(/\/+$/, '');
+  } catch {
+    return trimmed.replace(/\/+$/, '');
+  }
+}
+
 export async function getMauticVersion(context: IExecuteFunctions): Promise<MauticVersion> {
   const authMethod = context.getNodeParameter('authentication', 0, 'credentials') as string;
   const credentialType =
     authMethod === 'credentials' ? 'mauticAdvancedApi' : 'mauticAdvancedOAuth2Api';
   const credentials = await context.getCredentials(credentialType);
-  const baseUrl = ((credentials.url as string) || '').replace(/\/+$/, '');
+  const baseUrl = normalizeInstanceUrl((credentials.url as string) || '');
   const cacheKey = `${credentialType}:${baseUrl}`;
 
   const cached = versionCache.get(cacheKey);
