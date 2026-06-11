@@ -246,8 +246,15 @@ async function updateCompany(context: IExecuteFunctions, itemIndex: number): Pro
 async function getCompany(context: IExecuteFunctions, itemIndex: number): Promise<any> {
   const companyId = getRequiredParam<string>(context, 'companyId', itemIndex);
   const simple = getOptionalParam<boolean>(context, 'simple', itemIndex, false);
-  const response = await makeApiRequest(context, 'GET', `/companies/${companyId}`);
-  let result = response.company;
+  const mauticVersion = await getMauticVersion(context);
+
+  let result: any;
+  if (mauticVersion === 'v7') {
+    result = await makeApiRequest(context, 'GET', `/v2/companies/${companyId}`);
+  } else {
+    const response = await makeApiRequest(context, 'GET', `/companies/${companyId}`);
+    result = response.company;
+  }
   if (simple) {
     result = toSimpleCompany(result);
   }
@@ -257,34 +264,65 @@ async function getCompany(context: IExecuteFunctions, itemIndex: number): Promis
 async function getAllCompanies(context: IExecuteFunctions, itemIndex: number): Promise<any> {
   const returnAll = getOptionalParam<boolean>(context, 'returnAll', itemIndex, false);
   const simple = getOptionalParam<boolean>(context, 'simple', itemIndex, false);
-  const additionalFields = getOptionalParam<IDataObject>(
-    context,
-    'additionalFields',
-    itemIndex,
-    {},
-  );
-  const qs = buildQueryFromOptions(additionalFields);
-  if (!qs.orderBy) qs.orderBy = 'id';
-  if (!qs.orderByDir) qs.orderByDir = 'asc';
+  const mauticVersion = await getMauticVersion(context);
 
   let responseData: any[];
-  if (returnAll) {
-    const limit = getOptionalParam<number | undefined>(context, 'limit', itemIndex, undefined);
-    responseData = await makePaginatedRequest(
-      context,
-      'companies',
-      'GET',
-      '/companies',
-      {},
-      qs,
-      limit,
-    );
+
+  if (mauticVersion === 'v7') {
+    // v7: page-based pagination only (no start/limit/orderBy/search)
+    if (returnAll) {
+      const limit = getOptionalParam<number | undefined>(context, 'limit', itemIndex, undefined);
+      const allItems: any[] = [];
+      let page = 1;
+      while (true) {
+        const response = await makeApiRequest(context, 'GET', '/v2/companies', {}, { page });
+        const pageItems: any[] = Array.isArray(response)
+          ? response
+          : ((response?.['hydra:member'] as any[]) ?? []);
+        if (!pageItems.length) break;
+        allItems.push(...pageItems);
+        if (limit !== undefined && allItems.length >= limit) break;
+        page++;
+      }
+      responseData = limit !== undefined ? allItems.slice(0, limit) : allItems;
+    } else {
+      const limit = getRequiredParam<number>(context, 'limit', itemIndex);
+      const response = await makeApiRequest(context, 'GET', '/v2/companies', {}, { page: 1 });
+      const pageItems: any[] = Array.isArray(response)
+        ? response
+        : ((response?.['hydra:member'] as any[]) ?? []);
+      responseData = pageItems.slice(0, limit);
+    }
   } else {
-    const limit = getRequiredParam<number>(context, 'limit', itemIndex);
-    qs.limit = limit;
-    const response = await makeApiRequest(context, 'GET', '/companies', {}, qs);
-    responseData = (response.companies ? Object.values(response.companies) : []) as any[];
+    const additionalFields = getOptionalParam<IDataObject>(
+      context,
+      'additionalFields',
+      itemIndex,
+      {},
+    );
+    const qs = buildQueryFromOptions(additionalFields);
+    if (!qs.orderBy) qs.orderBy = 'id';
+    if (!qs.orderByDir) qs.orderByDir = 'asc';
+
+    if (returnAll) {
+      const limit = getOptionalParam<number | undefined>(context, 'limit', itemIndex, undefined);
+      responseData = await makePaginatedRequest(
+        context,
+        'companies',
+        'GET',
+        '/companies',
+        {},
+        qs,
+        limit,
+      );
+    } else {
+      const limit = getRequiredParam<number>(context, 'limit', itemIndex);
+      qs.limit = limit;
+      const response = await makeApiRequest(context, 'GET', '/companies', {}, qs);
+      responseData = (response.companies ? Object.values(response.companies) : []) as any[];
+    }
   }
+
   if (simple) {
     responseData = responseData.map((item: any) => toSimpleCompany(item));
   }
@@ -294,6 +332,14 @@ async function getAllCompanies(context: IExecuteFunctions, itemIndex: number): P
 async function deleteCompany(context: IExecuteFunctions, itemIndex: number): Promise<any> {
   const simple = getOptionalParam<boolean>(context, 'simple', itemIndex, false);
   const companyId = getRequiredParam<string>(context, 'companyId', itemIndex);
+  const mauticVersion = await getMauticVersion(context);
+
+  if (mauticVersion === 'v7') {
+    // v7 DELETE returns 204 no body
+    await makeApiRequest(context, 'DELETE', `/v2/companies/${companyId}`);
+    return { id: companyId };
+  }
+
   const response = await makeApiRequest(context, 'DELETE', `/companies/${companyId}/delete`);
   let result = response.company;
   if (simple) {
