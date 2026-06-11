@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.3.1] - 2026-06-11
+
+### Fixed
+
+- **Company Get / Get Many — custom fields restored**: Reverted Get and Get Many to use the v1 API (`/api/companies`). The v7 API Platform endpoint omits all custom company fields from responses, returning only standard entity fields (`name`, `website`, etc.). v1 returns the full `fields.all` payload including all custom fields. Create, Update, and Delete remain on v7 where owner handling is correct.
+
 ## [1.3.0] - 2026-06-11
 
 ### Added

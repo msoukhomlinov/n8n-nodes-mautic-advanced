@@ -253,115 +253,54 @@ async function updateCompany(context: IExecuteFunctions, itemIndex: number): Pro
 async function getCompany(context: IExecuteFunctions, itemIndex: number): Promise<any> {
   const companyId = getRequiredParam<string>(context, 'companyId', itemIndex);
   const simple = getOptionalParam<boolean>(context, 'simple', itemIndex, false);
-  const mauticVersion = await getMauticVersion(context);
 
-  let result: any;
-  if (mauticVersion === 'v7') {
-    result = await makeApiRequest(context, 'GET', `/v2/companies/${companyId}`, {}, {}, undefined, {
-      Accept: 'application/json',
-    });
-  } else {
-    const response = await makeApiRequest(context, 'GET', `/companies/${companyId}`);
-    result = response.company;
-  }
+  // v1 API used for reads — v7 API Platform omits custom fields from company responses
+  const response = await makeApiRequest(context, 'GET', `/companies/${companyId}`);
+  let result = response.company;
   if (simple) {
     result = toSimpleCompany(result);
   }
-  // v7 returns proper JSON types already; convertNumericStrings only needed for v1 string responses
-  return mauticVersion === 'v7' ? result : convertNumericStrings(result);
+  return convertNumericStrings(result);
 }
 
 async function getAllCompanies(context: IExecuteFunctions, itemIndex: number): Promise<any> {
   const returnAll = getOptionalParam<boolean>(context, 'returnAll', itemIndex, false);
   const simple = getOptionalParam<boolean>(context, 'simple', itemIndex, false);
-  const mauticVersion = await getMauticVersion(context);
+
+  // v1 API used for reads — v7 API Platform omits custom fields from company responses
+  const additionalFields = getOptionalParam<IDataObject>(
+    context,
+    'additionalFields',
+    itemIndex,
+    {},
+  );
+  const qs = buildQueryFromOptions(additionalFields);
+  if (!qs.orderBy) qs.orderBy = 'id';
+  if (!qs.orderByDir) qs.orderByDir = 'asc';
 
   let responseData: any[];
-
-  if (mauticVersion === 'v7') {
-    // v7: page-based pagination only (no start/limit/orderBy/search)
-    if (returnAll) {
-      const limit = getOptionalParam<number | undefined>(context, 'limit', itemIndex, undefined);
-      const allItems: any[] = [];
-      let page = 1;
-      while (true) {
-        const response = await makeApiRequest(
-          context,
-          'GET',
-          '/v2/companies',
-          {},
-          { page },
-          undefined,
-          { Accept: 'application/json' },
-        );
-        const pageItems: any[] = Array.isArray(response)
-          ? response
-          : ((response?.['hydra:member'] as any[]) ?? []);
-        if (!pageItems.length) break;
-        allItems.push(...pageItems);
-        if (limit !== undefined && allItems.length >= limit) break;
-        page++;
-      }
-      responseData = limit !== undefined ? allItems.slice(0, limit) : allItems;
-    } else {
-      // page through until limit satisfied — v7 page size is fixed (~30), limit may exceed it
-      const limit = getRequiredParam<number>(context, 'limit', itemIndex);
-      const allItems: any[] = [];
-      let page = 1;
-      while (allItems.length < limit) {
-        const response = await makeApiRequest(
-          context,
-          'GET',
-          '/v2/companies',
-          {},
-          { page },
-          undefined,
-          { Accept: 'application/json' },
-        );
-        const pageItems: any[] = Array.isArray(response)
-          ? response
-          : ((response?.['hydra:member'] as any[]) ?? []);
-        if (!pageItems.length) break;
-        allItems.push(...pageItems);
-        page++;
-      }
-      responseData = allItems.slice(0, limit);
-    }
-  } else {
-    const additionalFields = getOptionalParam<IDataObject>(
+  if (returnAll) {
+    const limit = getOptionalParam<number | undefined>(context, 'limit', itemIndex, undefined);
+    responseData = await makePaginatedRequest(
       context,
-      'additionalFields',
-      itemIndex,
+      'companies',
+      'GET',
+      '/companies',
       {},
+      qs,
+      limit,
     );
-    const qs = buildQueryFromOptions(additionalFields);
-    if (!qs.orderBy) qs.orderBy = 'id';
-    if (!qs.orderByDir) qs.orderByDir = 'asc';
-
-    if (returnAll) {
-      const limit = getOptionalParam<number | undefined>(context, 'limit', itemIndex, undefined);
-      responseData = await makePaginatedRequest(
-        context,
-        'companies',
-        'GET',
-        '/companies',
-        {},
-        qs,
-        limit,
-      );
-    } else {
-      const limit = getRequiredParam<number>(context, 'limit', itemIndex);
-      qs.limit = limit;
-      const response = await makeApiRequest(context, 'GET', '/companies', {}, qs);
-      responseData = (response.companies ? Object.values(response.companies) : []) as any[];
-    }
+  } else {
+    const limit = getRequiredParam<number>(context, 'limit', itemIndex);
+    qs.limit = limit;
+    const response = await makeApiRequest(context, 'GET', '/companies', {}, qs);
+    responseData = (response.companies ? Object.values(response.companies) : []) as any[];
   }
 
   if (simple) {
     responseData = responseData.map((item: any) => toSimpleCompany(item));
   }
-  // v7 returns proper JSON types already; convertNumericStrings only needed for v1 string responses
-  return mauticVersion === 'v7' ? responseData : convertNumericStrings(responseData);
+  return convertNumericStrings(responseData);
 }
 
 async function deleteCompany(context: IExecuteFunctions, itemIndex: number): Promise<any> {
