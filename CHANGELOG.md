@@ -1,5 +1,16 @@
 # Changelog
 
+## [1.3.5] - 2026-06-11
+
+### Performance
+
+- **Company Get Many is dramatically faster on v7**: Owner enrichment previously fetched the **entire** company collection from the v2 API on every Get Many — ignoring the requested `limit`, at the API Platform default page size of 30 rows/request. A "Get Many, limit 10" on a 10,000-company instance issued ~334 sequential v2 requests (and silently truncated owner data past row 3,000 due to a 100-page cap). Enrichment now:
+  - resolves owners for **only the company IDs that v1 actually returned**, with early-stop once they're all found — a limited Get Many ordered by id typically resolves in the first page instead of scanning the whole instance;
+  - requests `itemsPerPage=100` (vs the default 30) and `order[id]=asc` to align v2 ordering with v1;
+  - terminates on actual items-seen vs the collection total (robust even if the server caps `itemsPerPage`), removing the previous silent 3,000-row truncation;
+  - skips the v2 fetch entirely when the v1 result set is empty.
+- **v2 collection parsing hardened**: list responses are now read from both `hydra:member`/`hydra:totalItems` (legacy Hydra) and `member`/`totalItems` (API Platform 4.x), plus bare JSON arrays.
+
 ## [1.3.4] - 2026-06-11
 
 ### Fixed

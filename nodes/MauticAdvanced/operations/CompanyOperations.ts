@@ -281,32 +281,64 @@ function extractOwnerFromV7(v7Item: any): any {
   return owner;
 }
 
-// Fetch all companies from v7 and return a map of companyId → owner.
-// Uses JSON-LD so the response includes the owner `@id` IRI for user-ID extraction.
-async function buildV7OwnerMap(context: IExecuteFunctions): Promise<Map<number, any>> {
+const V7_OWNER_PAGE_SIZE = 100;
+// Backstop only — the loop normally exits when every needed owner is found or the collection ends.
+const V7_OWNER_MAX_PAGES = 1000;
+
+// Read the collection members from a v2 list response, tolerating both the legacy Hydra key
+// (`hydra:member`) and the newer API Platform 4.x form (`member`), plus a bare JSON array.
+function getV2CollectionItems(response: any): any[] {
+  if (Array.isArray(response)) return response;
+  return (response?.['hydra:member'] as any[]) ?? (response?.member as any[]) ?? [];
+}
+
+function getV2TotalItems(response: any): number | undefined {
+  const total = response?.['hydra:totalItems'] ?? response?.totalItems;
+  return typeof total === 'number' ? total : undefined;
+}
+
+// Build a map of companyId → owner for ONLY the given company IDs, by paging the v2 collection
+// (JSON-LD, so the owner `@id` IRI is present) and stopping as soon as every needed owner is
+// resolved. For a small/limited Get Many ordered by id, this resolves in the first page instead of
+// scanning the whole instance. Returns an empty map when no IDs are needed.
+async function buildV7OwnerMap(
+  context: IExecuteFunctions,
+  neededIds: Set<number>,
+): Promise<Map<number, any>> {
   const ownerMap = new Map<number, any>();
+  if (neededIds.size === 0) return ownerMap;
+
   let page = 1;
-  const MAX_PAGES = 100;
-  while (page <= MAX_PAGES) {
+  let itemsSeen = 0;
+  while (page <= V7_OWNER_MAX_PAGES) {
     const response = await makeApiRequest(
       context,
       'GET',
       '/v2/companies',
       {},
-      { page },
+      // order[id]=asc aligns v2 ordering with the v1 id-asc default so a limited Get Many resolves
+      // its owners in the first page(s); ignored by API Platform if the order filter isn't enabled.
+      { page, itemsPerPage: V7_OWNER_PAGE_SIZE, 'order[id]': 'asc' },
       undefined,
       LD_JSON_HEADERS,
     );
-    const items: any[] = Array.isArray(response)
-      ? response
-      : ((response?.['hydra:member'] as any[]) ?? []);
+    const items = getV2CollectionItems(response);
     if (!items.length) break;
+    itemsSeen += items.length;
+
     for (const item of items) {
       const id = Number(item.id);
-      if (id) ownerMap.set(id, extractOwnerFromV7(item));
+      if (id && neededIds.has(id)) ownerMap.set(id, extractOwnerFromV7(item));
     }
-    const total = response?.['hydra:totalItems'];
-    if (typeof total === 'number' && ownerMap.size >= total) break;
+
+    // Stop once every needed owner is resolved.
+    if (ownerMap.size >= neededIds.size) break;
+
+    // Stop at the end of the collection (covers needed IDs that no longer exist). Compare against
+    // the actual number of items seen, not an assumed page size — the server may cap itemsPerPage.
+    const total = getV2TotalItems(response);
+    if (total !== undefined && itemsSeen >= total) break;
+
     page++;
   }
   return ownerMap;
@@ -385,10 +417,13 @@ async function getAllCompanies(context: IExecuteFunctions, itemIndex: number): P
     responseData = (response.companies ? Object.values(response.companies) : []) as any[];
   }
 
-  if (v2Status === 'usable') {
+  if (v2Status === 'usable' && responseData.length > 0) {
     try {
-      // v7 enrichment: overlay owner on each v1 result using a single paginated v7 fetch
-      const ownerMap = await buildV7OwnerMap(context);
+      // v7 enrichment: resolve owners for ONLY the companies v1 returned, then overlay them.
+      const neededIds = new Set<number>(
+        responseData.map((company: any) => Number(company.id)).filter((id) => Number.isFinite(id)),
+      );
+      const ownerMap = await buildV7OwnerMap(context, neededIds);
       responseData = responseData.map((company: any) => ({
         ...company,
         owner: ownerMap.get(Number(company.id)) ?? null,
