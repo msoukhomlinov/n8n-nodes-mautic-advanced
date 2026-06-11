@@ -1,7 +1,7 @@
 // nodes/MauticAdvanced/ai-tools/tool-executor.ts
 import type { IHttpRequestMethods } from 'n8n-workflow';
 import { wrapSuccess, wrapError, formatApiError, ERROR_TYPES } from './error-formatter';
-import { mauticApiRequest } from '../GenericFunctions';
+import { mauticApiRequest, getMauticVersion } from '../GenericFunctions';
 import type { MauticRequestContext } from '../utils/authenticatedRequest';
 
 const N8N_METADATA_FIELDS = new Set([
@@ -85,13 +85,9 @@ async function apiRequest(
   return mauticApiRequest.call(context, method, endpoint, body, query);
 }
 
-// Detect mautic version from credentials
 async function getMauticVersionFromContext(context: MauticRequestContext): Promise<string> {
   try {
-    const authMethod = context.getNodeParameter('authentication', 0, 'credentials') as string;
-    const credName = authMethod === 'oAuth2' ? 'mauticAdvancedOAuth2Api' : 'mauticAdvancedApi';
-    const credentials = await context.getCredentials(credName);
-    return (credentials.mauticVersion as string) || 'v6';
+    return await getMauticVersion(context as Parameters<typeof getMauticVersion>[0]);
   } catch {
     return 'v6';
   }

@@ -43,10 +43,6 @@ function normalizeCredentialUrl(value: unknown): string {
   }
 }
 
-function getMauticVersion(credentials: ICredentialDataDecryptedObject): string {
-  return String(credentials.mauticVersion || 'v6');
-}
-
 function credentialRefPart(value: unknown): string | undefined {
   if (typeof value === 'string' && value) {
     return value;
@@ -93,7 +89,6 @@ function getCacheKey(
     credentialType,
     credentialReference,
     normalizeCredentialUrl(credentials.url),
-    getMauticVersion(credentials),
     datasetKey,
   ]);
 }

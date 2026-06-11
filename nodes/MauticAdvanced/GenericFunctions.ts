@@ -13,22 +13,35 @@ import { requestMauticAuthenticated } from './utils/authenticatedRequest';
 
 export type MauticVersion = 'v6' | 'v7';
 
-export async function getMauticVersion(context: IExecuteFunctions): Promise<MauticVersion> {
-  const authenticationMethod = context.getNodeParameter(
-    'authentication',
-    0,
-    'credentials',
-  ) as string;
+const versionCache = new Map<string, { version: MauticVersion; expiresAt: number }>();
+const VERSION_CACHE_TTL_MS = 5 * 60 * 1000;
 
-  if (authenticationMethod === 'credentials') {
-    const credentials = await context.getCredentials('mauticAdvancedApi');
-    const version = (credentials.mauticVersion as string) || 'v6';
-    return version === 'v7' ? 'v7' : 'v6';
+export async function getMauticVersion(context: IExecuteFunctions): Promise<MauticVersion> {
+  const authMethod = context.getNodeParameter('authentication', 0, 'credentials') as string;
+  const credentialType =
+    authMethod === 'credentials' ? 'mauticAdvancedApi' : 'mauticAdvancedOAuth2Api';
+  const credentials = await context.getCredentials(credentialType);
+  const baseUrl = ((credentials.url as string) || '').replace(/\/+$/, '');
+  const cacheKey = `${credentialType}:${baseUrl}`;
+
+  const cached = versionCache.get(cacheKey);
+  if (cached && Date.now() < cached.expiresAt) {
+    return cached.version;
   }
 
-  const credentials = await context.getCredentials('mauticAdvancedOAuth2Api');
-  const version = (credentials.mauticVersion as string) || 'v6';
-  return version === 'v7' ? 'v7' : 'v6';
+  let version: MauticVersion;
+  try {
+    await mauticApiRequest.call(context, 'GET', '/v2/companies', {}, { page: 1 }, undefined, {
+      Accept: 'application/json',
+    });
+    version = 'v7';
+  } catch (error: any) {
+    // 403 = v2 route exists but no permission → still v7; 404 = route absent → v6
+    version = error?.httpCode === '403' ? 'v7' : 'v6';
+  }
+
+  versionCache.set(cacheKey, { version, expiresAt: Date.now() + VERSION_CACHE_TTL_MS });
+  return version;
 }
 
 export async function mauticApiRequest(
