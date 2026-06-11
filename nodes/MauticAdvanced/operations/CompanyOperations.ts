@@ -125,7 +125,8 @@ async function createCompany(context: IExecuteFunctions, itemIndex: number): Pro
     Object.assign(body, data);
   }
 
-  Object.assign(body, rest);
+  // v7 API Platform rejects unknown fields; rest only applies to v1
+  if (mauticVersion !== 'v7') Object.assign(body, rest);
 
   let result: any;
   if (mauticVersion === 'v7') {
@@ -218,7 +219,8 @@ async function updateCompany(context: IExecuteFunctions, itemIndex: number): Pro
     Object.assign(body, data);
   }
 
-  Object.assign(body, rest);
+  // v7 API Platform rejects unknown fields; rest only applies to v1
+  if (mauticVersion !== 'v7') Object.assign(body, rest);
 
   let result: any;
   if (mauticVersion === 'v7') {
@@ -286,12 +288,20 @@ async function getAllCompanies(context: IExecuteFunctions, itemIndex: number): P
       }
       responseData = limit !== undefined ? allItems.slice(0, limit) : allItems;
     } else {
+      // page through until limit satisfied — v7 page size is fixed (~30), limit may exceed it
       const limit = getRequiredParam<number>(context, 'limit', itemIndex);
-      const response = await makeApiRequest(context, 'GET', '/v2/companies', {}, { page: 1 });
-      const pageItems: any[] = Array.isArray(response)
-        ? response
-        : ((response?.['hydra:member'] as any[]) ?? []);
-      responseData = pageItems.slice(0, limit);
+      const allItems: any[] = [];
+      let page = 1;
+      while (allItems.length < limit) {
+        const response = await makeApiRequest(context, 'GET', '/v2/companies', {}, { page });
+        const pageItems: any[] = Array.isArray(response)
+          ? response
+          : ((response?.['hydra:member'] as any[]) ?? []);
+        if (!pageItems.length) break;
+        allItems.push(...pageItems);
+        page++;
+      }
+      responseData = allItems.slice(0, limit);
     }
   } else {
     const additionalFields = getOptionalParam<IDataObject>(

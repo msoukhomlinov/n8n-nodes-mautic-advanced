@@ -58,7 +58,7 @@ export async function mauticApiRequest(
   try {
     const returnData = await requestMauticAuthenticated<any>(this, authenticationMethod, options);
 
-    if (returnData.errors) {
+    if (returnData?.errors) {
       // They seem to sometimes return 200 status but still error.
       // Preserve the full error object including details for better error handling
       throw new NodeApiError(this.getNode(), returnData as JsonObject, {
