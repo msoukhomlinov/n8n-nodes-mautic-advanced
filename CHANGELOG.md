@@ -1,5 +1,28 @@
 # Changelog
 
+## [1.3.0] - 2026-06-11
+
+### Added
+
+- **Mautic version auto-detection**: The node now detects whether the connected Mautic instance is v6 or v7+ automatically by probing the v2 API on first use. Result is cached per instance for 5 minutes. The `Mautic Version` dropdown has been removed from both credential types — existing credentials that have it stored will simply ignore the unused field.
+
+### Changed
+
+- **Company operations — Mautic v7 API Platform**: All five company operations now use the API Platform v2 endpoints (`/api/v2/companies`) when a v7 instance is detected, and fall back to v1 (`/api/companies`) for v6.
+  - **Create** (`POST /api/v2/companies`): body sent as `application/json`; owner set as IRI reference (`/api/v2/users/{id}`); fields use unprefixed v7 names (`name`, `email`, `zipcode`, etc.)
+  - **Update** (`PATCH /api/v2/companies/{id}`): body sent as `application/merge-patch+json`; owner set as IRI reference
+  - **Get** (`GET /api/v2/companies/{id}`): returns flat response with native JSON types (no string coercion)
+  - **Get Many** (`GET /api/v2/companies`): page-based pagination; both *Return All* and fixed-limit modes page through results correctly
+  - **Delete** (`DELETE /api/v2/companies/{id}`): handles HTTP 204 no-body response; returns `{ id: <number> }`
+  - `addContactToCompany` / `removeContactFromCompany` remain on v1 — no v2 equivalent exists
+
+### Fixed
+
+- **Company `isPublished`**: Setting *Is Published* on Company Create or Update now correctly reaches the v7 API. Previously it fell into the excluded `rest` spread and was silently dropped.
+- **JSON-LD response pollution**: All v7 company requests now send `Accept: application/json`, preventing API Platform from returning Hydra/JSON-LD responses with `@id`/`@type`/`@context` keys in workflow output.
+- **Company `convertNumericStrings`**: v7 returns native JSON types; numeric string coercion is now skipped for v7 to prevent zip codes and phone numbers being cast to integers.
+- **Company Delete return type**: `delete` now returns `{ id: <number> }` instead of a string id for v7.
+
 ## [1.2.1] - 2026-06-10
 
 ### Added
