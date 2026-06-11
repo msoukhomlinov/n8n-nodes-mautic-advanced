@@ -281,6 +281,11 @@ function extractOwnerFromV7(v7Item: any): any {
   return owner;
 }
 
+// Requested page size. NOTE: stock Mautic disables client control of page size
+// (pagination_client_items_per_page = false) and hard-caps at 30, so this is currently a no-op on
+// default installs — the server returns 30/page regardless. Kept because it is harmless and engages
+// automatically if an instance enables client page size; termination does not rely on it (we count
+// actual items returned, see the loop below).
 const V7_OWNER_PAGE_SIZE = 100;
 // Backstop only — the loop normally exits when every needed owner is found or the collection ends.
 const V7_OWNER_MAX_PAGES = 1000;
@@ -299,7 +304,8 @@ function getV2TotalItems(response: any): number | undefined {
 
 // Build a map of companyId → owner for ONLY the given company IDs, by paging the v2 collection
 // (JSON-LD, so the owner `@id` IRI is present) and stopping as soon as every needed owner is
-// resolved. For a small/limited Get Many ordered by id, this resolves in the first page instead of
+// resolved. Mautic's v2 collection defaults to ORDER BY id ASC, so a limited Get Many (whose v1
+// result is the lowest ids, also id ASC) resolves its owners in the first page(s) rather than
 // scanning the whole instance. Returns an empty map when no IDs are needed.
 async function buildV7OwnerMap(
   context: IExecuteFunctions,
@@ -316,8 +322,8 @@ async function buildV7OwnerMap(
       'GET',
       '/v2/companies',
       {},
-      // order[id]=asc aligns v2 ordering with the v1 id-asc default so a limited Get Many resolves
-      // its owners in the first page(s); ignored by API Platform if the order filter isn't enabled.
+      // order[id]=asc is a no-op on stock Mautic (no OrderFilter on Company), but the v2 collection
+      // already defaults to ORDER BY id ASC, so this just makes the relied-on ordering explicit.
       { page, itemsPerPage: V7_OWNER_PAGE_SIZE, 'order[id]': 'asc' },
       undefined,
       LD_JSON_HEADERS,

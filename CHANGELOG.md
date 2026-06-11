@@ -4,11 +4,11 @@
 
 ### Performance
 
-- **Company Get Many is dramatically faster on v7**: Owner enrichment previously fetched the **entire** company collection from the v2 API on every Get Many — ignoring the requested `limit`, at the API Platform default page size of 30 rows/request. A "Get Many, limit 10" on a 10,000-company instance issued ~334 sequential v2 requests (and silently truncated owner data past row 3,000 due to a 100-page cap). Enrichment now:
-  - resolves owners for **only the company IDs that v1 actually returned**, with early-stop once they're all found — a limited Get Many ordered by id typically resolves in the first page instead of scanning the whole instance;
-  - requests `itemsPerPage=100` (vs the default 30) and `order[id]=asc` to align v2 ordering with v1;
-  - terminates on actual items-seen vs the collection total (robust even if the server caps `itemsPerPage`), removing the previous silent 3,000-row truncation;
-  - skips the v2 fetch entirely when the v1 result set is empty.
+- **Company Get Many is dramatically faster on v7**: Owner enrichment previously fetched the **entire** company collection from the v2 API on every Get Many — ignoring the requested `limit`, at the page size of 30 rows/request. A "Get Many, limit 10" on a large instance scanned every page (e.g. ~85 pages for 2,540 companies; silently truncating owner data past row 3,000 due to a 100-page cap). Enrichment now:
+  - resolves owners for **only the company IDs that v1 actually returned**, with early-stop once they're all found. Mautic's v2 collection defaults to `ORDER BY id ASC` (matching v1), so a limited Get Many resolves its owners in the first page(s) — e.g. limit 10 now completes in a **single** v2 request instead of scanning the whole instance;
+  - terminates on actual items-seen vs the collection total, removing the previous silent 3,000-row truncation;
+  - skips the v2 fetch entirely when the v1 result set is empty;
+  - requests `itemsPerPage=100` and `order[id]=asc` as best-effort hints. Note: stock Mautic disables client page-size control (hard-caps at 30) and defines no order filter, so these are currently no-ops — the per-page count stays at 30. The speedup above comes from bounding to the returned IDs + early-stop, which is independent of page size; raising the per-page count further would require enabling client pagination on the Mautic server.
 - **v2 collection parsing hardened**: list responses are now read from both `hydra:member`/`hydra:totalItems` (legacy Hydra) and `member`/`totalItems` (API Platform 4.x), plus bare JSON arrays.
 
 ## [1.3.4] - 2026-06-11
