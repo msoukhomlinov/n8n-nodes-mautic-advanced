@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.3.4] - 2026-06-11
+
+### Fixed
+
+- **Company owner now resolves to a user ID under Basic auth**: The v7 owner-enrichment fetches now request `Accept: application/ld+json` instead of the default `application/json`. Mautic's API Platform only emits the owner's `@id` IRI (`/api/v2/users/{id}`) in the JSON-LD representation — the plain-JSON representation returns the embedded `owner` object with only FormEntity fields (`isPublished`/`dateAdded`/`dateModified`) and no identifier, because `User`'s own fields are not in the `company:read` serialization group. Requesting JSON-LD surfaces the IRI, from which the numeric user ID is extracted, so Company Get / Get Many now return `owner: { id: <n> }`.
+  - `extractOwnerFromV7` hardened to accept the owner serialised either as an embedded object with `@id`, a bare IRI string, or an object exposing a plain `id`; falls back to the raw owner object only when none is present.
+  - Verified against live Mautic 7.1.1 / API Platform 4.3.5: `application/ld+json` returns `owner["@id"] = "/api/v2/users/{id}"`; `application/hal+json` is not enabled (406); plain `application/json` never carries the id.
+
 ## [1.3.3] - 2026-06-11
 
 ### Fixed

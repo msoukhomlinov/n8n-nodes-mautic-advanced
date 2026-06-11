@@ -258,27 +258,45 @@ const V2_UNAUTHORIZED_OWNER_WARNING =
   'OAuth2 depends on the Mautic server allowing v2 access for the token. Returning owner: null. ' +
   'Switch the credential to Basic auth (or enable v2 access for OAuth2 on the Mautic server) to populate owner.';
 
-// Extract owner from a v7 company object. Requests without Accept: application/json
-// return JSON-LD where the owner IRI (/api/v2/users/{id}) lets us resolve the user ID.
+// Force API Platform to return JSON-LD/Hydra so the owner is serialised with its `@id` IRI
+// (/api/v2/users/{id}). The default `application/json` representation omits the IRI, leaving only
+// FormEntity fields (isPublished/dateAdded/dateModified) with no way to resolve the owner's user ID.
+const LD_JSON_HEADERS = { Accept: 'application/ld+json' };
+
+// Extract the owner's user ID from a v7 (JSON-LD) company object.
+// JSON-LD embeds the owner with `@id: "/api/v2/users/{id}"`; some shapes also expose a plain `id`.
 function extractOwnerFromV7(v7Item: any): any {
-  if (!v7Item || v7Item.owner === null || v7Item.owner === undefined) return null;
-  const iri = v7Item.owner?.['@id'] as string | undefined;
+  const owner = v7Item?.owner;
+  if (owner === null || owner === undefined) return null;
+  // Owner may be embedded as an object (with @id), or serialised as a bare IRI string.
+  const iri = typeof owner === 'string' ? owner : (owner['@id'] as string | undefined);
   if (iri) {
     const match = /\/(\d+)$/.exec(iri);
     if (match) return { id: Number(match[1]) };
   }
-  // No @id (non-Hydra response) — return partial FormEntity data as-is
-  return v7Item.owner;
+  if (typeof owner === 'object' && owner.id !== undefined && owner.id !== null) {
+    return { id: Number(owner.id) };
+  }
+  // No IRI and no id (plain-JSON owner) — return the partial FormEntity data as-is
+  return owner;
 }
 
 // Fetch all companies from v7 and return a map of companyId → owner.
-// Called without Accept: application/json so the response includes JSON-LD @id on the owner.
+// Uses JSON-LD so the response includes the owner `@id` IRI for user-ID extraction.
 async function buildV7OwnerMap(context: IExecuteFunctions): Promise<Map<number, any>> {
   const ownerMap = new Map<number, any>();
   let page = 1;
   const MAX_PAGES = 100;
   while (page <= MAX_PAGES) {
-    const response = await makeApiRequest(context, 'GET', '/v2/companies', {}, { page });
+    const response = await makeApiRequest(
+      context,
+      'GET',
+      '/v2/companies',
+      {},
+      { page },
+      undefined,
+      LD_JSON_HEADERS,
+    );
     const items: any[] = Array.isArray(response)
       ? response
       : ((response?.['hydra:member'] as any[]) ?? []);
@@ -305,8 +323,16 @@ async function getCompany(context: IExecuteFunctions, itemIndex: number): Promis
 
   if (v2Status === 'usable') {
     try {
-      // No Accept: application/json — JSON-LD response includes owner @id for user ID extraction
-      const v7Company = await makeApiRequest(context, 'GET', `/v2/companies/${companyId}`);
+      // JSON-LD response includes the owner @id IRI for user-ID extraction
+      const v7Company = await makeApiRequest(
+        context,
+        'GET',
+        `/v2/companies/${companyId}`,
+        {},
+        {},
+        undefined,
+        LD_JSON_HEADERS,
+      );
       result = { ...result, owner: extractOwnerFromV7(v7Company) };
     } catch (error: any) {
       // Enrichment failed unexpectedly (v2 was usable at probe time). Surface it instead of
