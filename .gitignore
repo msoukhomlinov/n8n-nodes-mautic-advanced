@@ -18,6 +18,9 @@ out/
 .DS_Store
 Thumbs.db
 
+# Runtime cache
+cache/
+
 # Temporary files
 *.tmp
 *.temp
