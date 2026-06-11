@@ -193,6 +193,11 @@ npm install n8n-nodes-mautic-advanced
 3. Enter your Mautic URL
 4. Follow the OAuth2 authorization flow
 
+> **Auth method and Company Owner (v7 enrichment):** The Mautic version (v6 vs v7) is auto-detected by probing the v2 API (API Platform). Company **owner** is a v7-only field, populated by enriching Company *Get* / *Get Many* via the v2 API. The v2 API requires an auth method the server accepts:
+>
+> - **Basic auth** — confirmed working with the v2 API; owner enrichment populates `owner: { id }`.
+> - **OAuth2** — depends on the Mautic server allowing v2 access for the bearer token. Many Mautic installs reject v1-style OAuth2 tokens at the v2 API Platform firewall (HTTP 401), in which case the node falls back to the v1 API for all company operations and **owner cannot be enriched** (`owner: null`). When this happens, a warning is logged explaining the cause. Custom fields and all other company data are unaffected. To populate owner, switch the credential to Basic auth, or enable v2 API access for OAuth2 on the Mautic server.
+
 ## Advanced Features
 
 ### Where Filters

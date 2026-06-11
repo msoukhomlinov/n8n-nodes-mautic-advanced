@@ -1,5 +1,18 @@
 # Changelog
 
+## [1.3.3] - 2026-06-11
+
+### Fixed
+
+- **Company owner enrichment no longer fails silently under OAuth2**: Version detection now distinguishes the v2 API probe outcomes. Previously any non-403 error (including the **401** that Mautic's v2 API Platform firewall returns for v1-style OAuth2 bearer tokens) was mapped to v6, so owner enrichment was skipped with no indication and Company Get / Get Many returned `owner: null` despite the instance being v7.
+  - The probe now classifies v2 as `usable` (200), `unauthorized` (401/403 — route exists but the credential is rejected), or `absent` (404/other — genuine v6). Routing falls back to the v1 API whenever v2 is not `usable`, so all company operations keep working under OAuth2.
+  - When owner enrichment is skipped because v2 returned 401/403, a clear warning is now logged explaining that owner is a v7-only field requiring an auth method the v2 API accepts (Basic auth confirmed working; OAuth2 depends on the server's v2 firewall config). Custom fields and all other company data are unaffected.
+  - The enrichment `try/catch` blocks in Company Get / Get Many now log the underlying error via `logger.warn` instead of swallowing it to `owner: null`.
+
+### Docs
+
+- Documented the auth-method dependency for Company owner enrichment in the README (Basic auth works with the v2 API; OAuth2 depends on the Mautic server's v2 API firewall).
+
 ## [1.3.2] - 2026-06-11
 
 ### Fixed

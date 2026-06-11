@@ -13,7 +13,19 @@ import { requestMauticAuthenticated } from './utils/authenticatedRequest';
 
 export type MauticVersion = 'v6' | 'v7';
 
-const versionCache = new Map<string, { version: MauticVersion; expiresAt: number }>();
+/**
+ * Outcome of probing the Mautic v2 (API Platform) endpoints with the active credential.
+ * - `usable`       — v2 responded 200; the credential can read v2 (Basic auth, or an OAuth2 firewall that allows v2).
+ * - `unauthorized` — v2 route exists but rejected the credential (401/403). Mautic's v2 API Platform firewall
+ *                    commonly rejects v1-style OAuth2 bearer tokens; Basic auth is the confirmed-working path.
+ * - `absent`       — v2 route not present (404) or probe otherwise failed; this is a Mautic v6 (or older) instance.
+ */
+export type MauticV2Status = 'usable' | 'unauthorized' | 'absent';
+
+const versionCache = new Map<
+  string,
+  { version: MauticVersion; v2Status: MauticV2Status; expiresAt: number }
+>();
 const VERSION_CACHE_TTL_MS = 5 * 60 * 1000;
 
 function normalizeInstanceUrl(raw: string): string {
@@ -32,7 +44,9 @@ function normalizeInstanceUrl(raw: string): string {
   }
 }
 
-export async function getMauticVersion(context: IExecuteFunctions): Promise<MauticVersion> {
+async function detectMauticV2(
+  context: IExecuteFunctions,
+): Promise<{ version: MauticVersion; v2Status: MauticV2Status }> {
   const authMethod = context.getNodeParameter('authentication', 0, 'credentials') as string;
   const credentialType =
     authMethod === 'credentials' ? 'mauticAdvancedApi' : 'mauticAdvancedOAuth2Api';
@@ -42,22 +56,44 @@ export async function getMauticVersion(context: IExecuteFunctions): Promise<Maut
 
   const cached = versionCache.get(cacheKey);
   if (cached && Date.now() < cached.expiresAt) {
-    return cached.version;
+    return { version: cached.version, v2Status: cached.v2Status };
   }
 
-  let version: MauticVersion;
+  let v2Status: MauticV2Status;
   try {
     await mauticApiRequest.call(context, 'GET', '/v2/companies', {}, { page: 1 }, undefined, {
       Accept: 'application/json',
     });
-    version = 'v7';
+    v2Status = 'usable';
   } catch (error: any) {
-    // 403 = v2 route exists but no permission → still v7; 404 = route absent → v6
-    version = error?.httpCode === '403' ? 'v7' : 'v6';
+    const httpCode = String(error?.httpCode ?? '');
+    // 401/403 = v2 route exists but the credential is rejected/forbidden there. Mautic's v2 API
+    // Platform firewall commonly rejects v1-style OAuth2 bearer tokens (Basic auth works). The
+    // route exists, but this credential cannot use it — fall back to v1 for routing.
+    // 404 / parse errors / network = v2 route absent → genuine v6 instance.
+    v2Status = httpCode === '401' || httpCode === '403' ? 'unauthorized' : 'absent';
   }
 
-  versionCache.set(cacheKey, { version, expiresAt: Date.now() + VERSION_CACHE_TTL_MS });
-  return version;
+  // Routing version: only treat as v7 when v2 is actually usable, so that operations route to the
+  // v1 endpoints (which work under this credential) whenever v2 is unreachable. Owner enrichment,
+  // a v7-only feature, is gated separately on `v2Status === 'usable'`.
+  const version: MauticVersion = v2Status === 'usable' ? 'v7' : 'v6';
+
+  versionCache.set(cacheKey, { version, v2Status, expiresAt: Date.now() + VERSION_CACHE_TTL_MS });
+  return { version, v2Status };
+}
+
+export async function getMauticVersion(context: IExecuteFunctions): Promise<MauticVersion> {
+  return (await detectMauticV2(context)).version;
+}
+
+/**
+ * Returns whether the Mautic v2 (API Platform) endpoints are usable with the active credential.
+ * Callers use this to decide whether v7-only enrichment is possible and to warn actionably when a
+ * v2 route exists but the credential is rejected there (`unauthorized`).
+ */
+export async function getMauticV2Status(context: IExecuteFunctions): Promise<MauticV2Status> {
+  return (await detectMauticV2(context)).v2Status;
 }
 
 export async function mauticApiRequest(

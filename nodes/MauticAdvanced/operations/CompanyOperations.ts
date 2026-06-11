@@ -7,7 +7,7 @@ import {
   getOptionalParam,
   getRequiredParam,
 } from '../utils/ApiHelpers';
-import { getMauticVersion } from '../GenericFunctions';
+import { getMauticVersion, getMauticV2Status } from '../GenericFunctions';
 import { buildQueryFromOptions, wrapSingleItem, convertNumericStrings } from '../utils/DataHelpers';
 
 export async function executeCompanyOperation(
@@ -250,6 +250,14 @@ async function updateCompany(context: IExecuteFunctions, itemIndex: number): Pro
   return result;
 }
 
+// Logged once per Get/Get Many call when the v2 API exists but rejected the credential, so the
+// reason owner is null is visible in the n8n logs instead of failing silently.
+const V2_UNAUTHORIZED_OWNER_WARNING =
+  'Mautic company owner enrichment skipped: the v2 API (API Platform) rejected this credential (401/403). ' +
+  'Owner is a v7-only field that requires an auth method the v2 API accepts — Basic auth is confirmed working; ' +
+  'OAuth2 depends on the Mautic server allowing v2 access for the token. Returning owner: null. ' +
+  'Switch the credential to Basic auth (or enable v2 access for OAuth2 on the Mautic server) to populate owner.';
+
 // Extract owner from a v7 company object. Requests without Accept: application/json
 // return JSON-LD where the owner IRI (/api/v2/users/{id}) lets us resolve the user ID.
 function extractOwnerFromV7(v7Item: any): any {
@@ -289,20 +297,27 @@ async function buildV7OwnerMap(context: IExecuteFunctions): Promise<Map<number, 
 async function getCompany(context: IExecuteFunctions, itemIndex: number): Promise<any> {
   const companyId = getRequiredParam<string>(context, 'companyId', itemIndex);
   const simple = getOptionalParam<boolean>(context, 'simple', itemIndex, false);
-  const mauticVersion = await getMauticVersion(context);
+  const v2Status = await getMauticV2Status(context);
 
   // v1: custom fields via fields.all
   const v1Response = await makeApiRequest(context, 'GET', `/companies/${companyId}`);
   let result = v1Response.company;
 
-  if (mauticVersion === 'v7') {
+  if (v2Status === 'usable') {
     try {
       // No Accept: application/json — JSON-LD response includes owner @id for user ID extraction
       const v7Company = await makeApiRequest(context, 'GET', `/v2/companies/${companyId}`);
       result = { ...result, owner: extractOwnerFromV7(v7Company) };
-    } catch {
-      // enrichment failed — proceed with v1 data (owner: null)
+    } catch (error: any) {
+      // Enrichment failed unexpectedly (v2 was usable at probe time). Surface it instead of
+      // silently degrading to owner: null, so the cause is visible in the logs.
+      context.logger.warn(
+        `Mautic company owner enrichment failed for company ${companyId}: ${error?.message ?? error}. Returning owner: null.`,
+      );
     }
+  } else if (v2Status === 'unauthorized') {
+    // v2 route exists but the credential is rejected there — owner cannot be enriched. Warn once.
+    context.logger.warn(V2_UNAUTHORIZED_OWNER_WARNING);
   }
 
   if (simple) result = toSimpleCompany(result);
@@ -312,7 +327,7 @@ async function getCompany(context: IExecuteFunctions, itemIndex: number): Promis
 async function getAllCompanies(context: IExecuteFunctions, itemIndex: number): Promise<any> {
   const returnAll = getOptionalParam<boolean>(context, 'returnAll', itemIndex, false);
   const simple = getOptionalParam<boolean>(context, 'simple', itemIndex, false);
-  const mauticVersion = await getMauticVersion(context);
+  const v2Status = await getMauticV2Status(context);
 
   const additionalFields = getOptionalParam<IDataObject>(
     context,
@@ -344,7 +359,7 @@ async function getAllCompanies(context: IExecuteFunctions, itemIndex: number): P
     responseData = (response.companies ? Object.values(response.companies) : []) as any[];
   }
 
-  if (mauticVersion === 'v7') {
+  if (v2Status === 'usable') {
     try {
       // v7 enrichment: overlay owner on each v1 result using a single paginated v7 fetch
       const ownerMap = await buildV7OwnerMap(context);
@@ -352,9 +367,16 @@ async function getAllCompanies(context: IExecuteFunctions, itemIndex: number): P
         ...company,
         owner: ownerMap.get(Number(company.id)) ?? null,
       }));
-    } catch {
-      // enrichment failed — proceed with v1 data (owner: null)
+    } catch (error: any) {
+      // Enrichment failed unexpectedly (v2 was usable at probe time). Surface it instead of
+      // silently degrading to owner: null, so the cause is visible in the logs.
+      context.logger.warn(
+        `Mautic company owner enrichment failed for Get Many: ${error?.message ?? error}. Returning owner: null for all rows.`,
+      );
     }
+  } else if (v2Status === 'unauthorized') {
+    // v2 route exists but the credential is rejected there — owner cannot be enriched. Warn once.
+    context.logger.warn(V2_UNAUTHORIZED_OWNER_WARNING);
   }
 
   if (simple) {
