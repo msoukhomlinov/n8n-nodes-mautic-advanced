@@ -63,6 +63,7 @@ async function createCompany(context: IExecuteFunctions, itemIndex: number): Pro
     companyEmail,
     fax,
     industry,
+    isPublished,
     numberOfEmployees,
     owner,
     phone,
@@ -87,6 +88,7 @@ async function createCompany(context: IExecuteFunctions, itemIndex: number): Pro
     }
     if (companyEmail) body.email = companyEmail as string;
     if (industry) body.industry = industry as string;
+    if (isPublished !== undefined) body.isPublished = isPublished as boolean;
     if (owner) body.owner = `/api/v2/users/${owner}`;
     if (phone) body.phone = phone as string;
     if (website) body.website = website as string;
@@ -132,6 +134,7 @@ async function createCompany(context: IExecuteFunctions, itemIndex: number): Pro
   if (mauticVersion === 'v7') {
     const response = await makeApiRequest(context, 'POST', '/v2/companies', body, {}, undefined, {
       'Content-Type': 'application/json',
+      Accept: 'application/json',
     });
     result = response;
   } else {
@@ -159,6 +162,7 @@ async function updateCompany(context: IExecuteFunctions, itemIndex: number): Pro
     name,
     fax,
     industry,
+    isPublished,
     numberOfEmployees,
     owner,
     phone,
@@ -181,6 +185,7 @@ async function updateCompany(context: IExecuteFunctions, itemIndex: number): Pro
     }
     if (companyEmail) body.email = companyEmail as string;
     if (industry) body.industry = industry as string;
+    if (isPublished !== undefined) body.isPublished = isPublished as boolean;
     if (owner) body.owner = `/api/v2/users/${owner}`;
     if (phone) body.phone = phone as string;
     if (website) body.website = website as string;
@@ -231,7 +236,7 @@ async function updateCompany(context: IExecuteFunctions, itemIndex: number): Pro
       body,
       {},
       undefined,
-      { 'Content-Type': 'application/merge-patch+json' },
+      { 'Content-Type': 'application/merge-patch+json', Accept: 'application/json' },
     );
     result = response;
   } else {
@@ -252,7 +257,9 @@ async function getCompany(context: IExecuteFunctions, itemIndex: number): Promis
 
   let result: any;
   if (mauticVersion === 'v7') {
-    result = await makeApiRequest(context, 'GET', `/v2/companies/${companyId}`);
+    result = await makeApiRequest(context, 'GET', `/v2/companies/${companyId}`, {}, {}, undefined, {
+      Accept: 'application/json',
+    });
   } else {
     const response = await makeApiRequest(context, 'GET', `/companies/${companyId}`);
     result = response.company;
@@ -278,7 +285,15 @@ async function getAllCompanies(context: IExecuteFunctions, itemIndex: number): P
       const allItems: any[] = [];
       let page = 1;
       while (true) {
-        const response = await makeApiRequest(context, 'GET', '/v2/companies', {}, { page });
+        const response = await makeApiRequest(
+          context,
+          'GET',
+          '/v2/companies',
+          {},
+          { page },
+          undefined,
+          { Accept: 'application/json' },
+        );
         const pageItems: any[] = Array.isArray(response)
           ? response
           : ((response?.['hydra:member'] as any[]) ?? []);
@@ -294,7 +309,15 @@ async function getAllCompanies(context: IExecuteFunctions, itemIndex: number): P
       const allItems: any[] = [];
       let page = 1;
       while (allItems.length < limit) {
-        const response = await makeApiRequest(context, 'GET', '/v2/companies', {}, { page });
+        const response = await makeApiRequest(
+          context,
+          'GET',
+          '/v2/companies',
+          {},
+          { page },
+          undefined,
+          { Accept: 'application/json' },
+        );
         const pageItems: any[] = Array.isArray(response)
           ? response
           : ((response?.['hydra:member'] as any[]) ?? []);
@@ -348,7 +371,9 @@ async function deleteCompany(context: IExecuteFunctions, itemIndex: number): Pro
 
   if (mauticVersion === 'v7') {
     // v7 DELETE returns 204 no body
-    await makeApiRequest(context, 'DELETE', `/v2/companies/${companyId}`);
+    await makeApiRequest(context, 'DELETE', `/v2/companies/${companyId}`, {}, {}, undefined, {
+      Accept: 'application/json',
+    });
     return { id: Number(companyId) };
   }
 
