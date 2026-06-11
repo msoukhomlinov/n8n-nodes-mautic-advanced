@@ -227,11 +227,27 @@ async function getAllContacts(context: IExecuteFunctions, itemIndex: number): Pr
     if (filterExpr) searchParts.push(filterExpr);
   }
 
-  // Owner filter (always OR for multiple owners - a contact can only have one owner)
-  const owners = (options as any).owners as string[] | undefined;
-  if (Array.isArray(owners) && owners.length > 0) {
-    const filterExpr = buildSearchFilterExpression(owners, 'owner', 'any');
-    if (filterExpr) searchParts.push(filterExpr);
+  // Owner filter — applied CLIENT-SIDE on the contact's owner.id.
+  // Mautic's `owner:` search command matches the owner's first/last NAME (LIKE), not the user id,
+  // so sending `owner:<id>` (what the Owner(s) dropdown provides) silently returns nothing. The v1
+  // contact body already includes `owner.id`, so we filter on that instead.
+  const owners = (options as any).owners as Array<string | number> | undefined;
+  const ownerIdFilter =
+    Array.isArray(owners) && owners.length > 0
+      ? new Set<number>(owners.map((o) => Number(o)).filter((n) => Number.isFinite(n)))
+      : undefined;
+
+  // Do-Not-Contact filter — applied SERVER-SIDE via Mautic's `dnc:` search command, so only
+  // matching contacts are fetched (replaces the previous client-side page-and-discard scan).
+  // `dnc:<channel>` = IS on DNC for that channel; `dnc:any` = on any channel.
+  const emailDncOnly = (options as any).emailDncOnly === true;
+  const smsDncOnly = (options as any).smsDncOnly === true;
+  const anyDncOnly = (options as any).anyDncOnly === true;
+  if (anyDncOnly) {
+    searchParts.push('dnc:any');
+  } else {
+    if (emailDncOnly) searchParts.push('dnc:email');
+    if (smsDncOnly) searchParts.push('dnc:sms');
   }
 
   // Stage filter (always OR for multiple stages - a contact can only be in one stage)
@@ -279,21 +295,22 @@ async function getAllContacts(context: IExecuteFunctions, itemIndex: number): Pr
     }
   }
   let responseData: any[];
-  const emailDncOnly = (options as any).emailDncOnly === true;
-  const smsDncOnly = (options as any).smsDncOnly === true;
-  const anyDncOnly = (options as any).anyDncOnly === true;
-  const useDncPostFilter = emailDncOnly || smsDncOnly || anyDncOnly;
-  if (useDncPostFilter) {
+  if (ownerIdFilter) {
+    // Owner filter has no server-side equivalent, so page through the (already server-filtered)
+    // results and keep only those whose owner.id matches, until the limit is met or results run out.
     const limit = returnAll ? undefined : getOptionalParam(context, 'limit', itemIndex, 30);
-    responseData = await getContactsWithDncFilter(context, qs, options, limit);
+    responseData = await getContactsWithClientFilter(
+      context,
+      qs,
+      (contact: any) => ownerIdFilter.has(Number(contact?.owner?.id)),
+      limit,
+    );
+  } else if (returnAll) {
+    responseData = await makePaginatedRequest(context, 'contacts', 'GET', '/contacts', {}, qs);
   } else {
-    if (returnAll) {
-      responseData = await makePaginatedRequest(context, 'contacts', 'GET', '/contacts', {}, qs);
-    } else {
-      qs.limit = getOptionalParam(context, 'limit', itemIndex, 30);
-      const response = await makeApiRequest(context, 'GET', '/contacts', {}, qs);
-      responseData = response.contacts ? Object.values(response.contacts) : [];
-    }
+    qs.limit = getOptionalParam(context, 'limit', itemIndex, 30);
+    const response = await makeApiRequest(context, 'GET', '/contacts', {}, qs);
+    responseData = response.contacts ? Object.values(response.contacts) : [];
   }
   const processedData = processContactFields(
     responseData,
@@ -742,15 +759,15 @@ function addContactFields(body: any, fields: any) {
   }
 }
 
-async function getContactsWithDncFilter(
+// Page through /contacts (already narrowed by any server-side search in `qs`) and keep only the
+// contacts that satisfy `predicate`, stopping once `limit` matches are collected or results run out.
+// Used for filters that have no server-side equivalent (e.g. owner-by-id).
+async function getContactsWithClientFilter(
   context: IExecuteFunctions,
   qs: any,
-  options: any,
+  predicate: (contact: any) => boolean,
   limit?: number,
 ): Promise<any[]> {
-  const emailDncOnly = options.emailDncOnly === true;
-  const smsDncOnly = options.smsDncOnly === true;
-  const anyDncOnly = options.anyDncOnly === true;
   const requestedStart = Number(qs.start ?? 0);
   const maxResults = typeof limit === 'number' && limit > 0 ? Math.floor(limit) : undefined;
   const contacts: any[] = [];
@@ -758,25 +775,13 @@ async function getContactsWithDncFilter(
   let currentStart = Number.isFinite(requestedStart) && requestedStart > 0 ? requestedStart : 0;
 
   while (remaining === undefined || remaining > 0) {
-    const pageLimit =
-      remaining === undefined
-        ? DEFAULT_MAUTIC_PAGE_SIZE
-        : Math.min(remaining, DEFAULT_MAUTIC_PAGE_SIZE);
+    // Always fetch full pages so the scan terminates promptly; `remaining` only caps what we keep.
+    const pageLimit = DEFAULT_MAUTIC_PAGE_SIZE;
     const pageQs = { ...qs, start: currentStart, limit: pageLimit };
     const pageResponse = await makeApiRequest(context, 'GET', '/contacts', {}, pageQs);
     const pageContacts = pageResponse.contacts ? Object.values(pageResponse.contacts) : [];
 
-    const filtered = pageContacts.filter((contact: any) => {
-      const dnc = contact.doNotContact || [];
-      const hasEmailDnc = dnc.some((d: any) => d.channel === 'email');
-      const hasSmsDnc = dnc.some((d: any) => d.channel === 'sms');
-
-      if (emailDncOnly) return hasEmailDnc;
-      if (smsDncOnly) return hasSmsDnc;
-      if (anyDncOnly) return hasEmailDnc || hasSmsDnc;
-      return true;
-    });
-
+    const filtered = pageContacts.filter(predicate);
     const toAdd = remaining === undefined ? filtered : filtered.slice(0, remaining);
     contacts.push(...toAdd);
 

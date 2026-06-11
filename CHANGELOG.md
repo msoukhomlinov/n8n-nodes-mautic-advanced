@@ -1,5 +1,20 @@
 # Changelog
 
+## [1.3.6] - 2026-06-12
+
+### Performance
+
+- **Contact Get Many — Do-Not-Contact filter is now server-side**: The Email/SMS/Any DNC filters previously fetched pages of contacts and discarded non-matching ones client-side, scanning far more records than returned. They now use Mautic's `dnc:` search command (`dnc:email`, `dnc:sms`, `dnc:any`) so the server returns only matching contacts. On the verified instance this means a DNC filter pages only the ~608 DNC contacts instead of scanning all ~9,500.
+
+### Fixed
+
+- **Contact Owner(s) filter returned nothing**: The filter sent `owner:<id>` to Mautic's search, but Mautic's `owner:` command matches the owner's first/last **name** (LIKE), not the user ID — so filtering by owner silently returned zero contacts. The owner filter is now applied client-side against the `owner.id` already present in the contact response, so it works correctly. (Mautic has no server-side owner-by-ID search; combine with other filters to narrow the set first.)
+
+### Notes
+
+- Contact responses already include the owner as an embedded object with a numeric `id` (verified against Mautic 7.1.1), so no owner-enrichment fetch is needed for contacts — unlike Company, the v1 contact API returns the owner directly.
+- Contacts remain on the v1 API: the v2 (API Platform) contacts endpoint omits all custom fields (only standard scalars) and is hard-capped at 30 rows/page, so it offers nothing over v1 for this node. The v1 contacts list has no 30-row cap.
+
 ## [1.3.5] - 2026-06-11
 
 ### Performance

@@ -1588,7 +1588,7 @@ export const contactFields: INodeProperties[] = [
         },
         default: [],
         description:
-          'Filter contacts by owner (assigned user). Uses Mautic search syntax (owner:id) under the hood.',
+          'Filter contacts by owner (assigned user). Matched on the returned owner ID. Note: Mautic has no server-side owner-by-ID search, so this is applied client-side over the result set — combine with other filters (e.g. segment/tag/DNC) to narrow the set first.',
       },
       {
         displayName: 'Published Only',
