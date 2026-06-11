@@ -250,24 +250,70 @@ async function updateCompany(context: IExecuteFunctions, itemIndex: number): Pro
   return result;
 }
 
+// Extract owner from a v7 company object. Requests without Accept: application/json
+// return JSON-LD where the owner IRI (/api/v2/users/{id}) lets us resolve the user ID.
+function extractOwnerFromV7(v7Item: any): any {
+  if (!v7Item || v7Item.owner === null || v7Item.owner === undefined) return null;
+  const iri = v7Item.owner?.['@id'] as string | undefined;
+  if (iri) {
+    const match = /\/(\d+)$/.exec(iri);
+    if (match) return { id: Number(match[1]) };
+  }
+  // No @id (non-Hydra response) — return partial FormEntity data as-is
+  return v7Item.owner;
+}
+
+// Fetch all companies from v7 and return a map of companyId → owner.
+// Called without Accept: application/json so the response includes JSON-LD @id on the owner.
+async function buildV7OwnerMap(context: IExecuteFunctions): Promise<Map<number, any>> {
+  const ownerMap = new Map<number, any>();
+  let page = 1;
+  const MAX_PAGES = 100;
+  while (page <= MAX_PAGES) {
+    const response = await makeApiRequest(context, 'GET', '/v2/companies', {}, { page });
+    const items: any[] = Array.isArray(response)
+      ? response
+      : ((response?.['hydra:member'] as any[]) ?? []);
+    if (!items.length) break;
+    for (const item of items) {
+      const id = Number(item.id);
+      if (id) ownerMap.set(id, extractOwnerFromV7(item));
+    }
+    const total = response?.['hydra:totalItems'];
+    if (typeof total === 'number' && ownerMap.size >= total) break;
+    page++;
+  }
+  return ownerMap;
+}
+
 async function getCompany(context: IExecuteFunctions, itemIndex: number): Promise<any> {
   const companyId = getRequiredParam<string>(context, 'companyId', itemIndex);
   const simple = getOptionalParam<boolean>(context, 'simple', itemIndex, false);
+  const mauticVersion = await getMauticVersion(context);
 
-  // v1 API used for reads — v7 API Platform omits custom fields from company responses
-  const response = await makeApiRequest(context, 'GET', `/companies/${companyId}`);
-  let result = response.company;
-  if (simple) {
-    result = toSimpleCompany(result);
+  // v1: custom fields via fields.all
+  const v1Response = await makeApiRequest(context, 'GET', `/companies/${companyId}`);
+  let result = v1Response.company;
+
+  if (mauticVersion === 'v7') {
+    try {
+      // No Accept: application/json — JSON-LD response includes owner @id for user ID extraction
+      const v7Company = await makeApiRequest(context, 'GET', `/v2/companies/${companyId}`);
+      result = { ...result, owner: extractOwnerFromV7(v7Company) };
+    } catch {
+      // enrichment failed — proceed with v1 data (owner: null)
+    }
   }
+
+  if (simple) result = toSimpleCompany(result);
   return convertNumericStrings(result);
 }
 
 async function getAllCompanies(context: IExecuteFunctions, itemIndex: number): Promise<any> {
   const returnAll = getOptionalParam<boolean>(context, 'returnAll', itemIndex, false);
   const simple = getOptionalParam<boolean>(context, 'simple', itemIndex, false);
+  const mauticVersion = await getMauticVersion(context);
 
-  // v1 API used for reads — v7 API Platform omits custom fields from company responses
   const additionalFields = getOptionalParam<IDataObject>(
     context,
     'additionalFields',
@@ -278,6 +324,7 @@ async function getAllCompanies(context: IExecuteFunctions, itemIndex: number): P
   if (!qs.orderBy) qs.orderBy = 'id';
   if (!qs.orderByDir) qs.orderByDir = 'asc';
 
+  // v1: custom fields via fields.all
   let responseData: any[];
   if (returnAll) {
     const limit = getOptionalParam<number | undefined>(context, 'limit', itemIndex, undefined);
@@ -295,6 +342,19 @@ async function getAllCompanies(context: IExecuteFunctions, itemIndex: number): P
     qs.limit = limit;
     const response = await makeApiRequest(context, 'GET', '/companies', {}, qs);
     responseData = (response.companies ? Object.values(response.companies) : []) as any[];
+  }
+
+  if (mauticVersion === 'v7') {
+    try {
+      // v7 enrichment: overlay owner on each v1 result using a single paginated v7 fetch
+      const ownerMap = await buildV7OwnerMap(context);
+      responseData = responseData.map((company: any) => ({
+        ...company,
+        owner: ownerMap.get(Number(company.id)) ?? null,
+      }));
+    } catch {
+      // enrichment failed — proceed with v1 data (owner: null)
+    }
   }
 
   if (simple) {

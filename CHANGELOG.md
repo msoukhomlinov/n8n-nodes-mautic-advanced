@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.3.2] - 2026-06-11
+
+### Fixed
+
+- **Company Get / Get Many — owner enrichment**: When v7 is detected, Get and Get Many now perform a secondary v7 fetch (JSON-LD, no `Accept: application/json` header) to extract the owner user ID from the Hydra IRI (`/api/v2/users/{id}`). The v1 result (all custom fields) is merged with the v7 owner so both custom fields and `owner: { id: N }` appear in output. If the v7 enrichment fetch fails, the operation continues with v1 data and `owner: null`.
+
 ## [1.3.1] - 2026-06-11
 
 ### Fixed
