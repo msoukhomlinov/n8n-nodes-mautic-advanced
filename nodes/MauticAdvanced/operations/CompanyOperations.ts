@@ -260,7 +260,8 @@ async function getCompany(context: IExecuteFunctions, itemIndex: number): Promis
   if (simple) {
     result = toSimpleCompany(result);
   }
-  return convertNumericStrings(result);
+  // v7 returns proper JSON types already; convertNumericStrings only needed for v1 string responses
+  return mauticVersion === 'v7' ? result : convertNumericStrings(result);
 }
 
 async function getAllCompanies(context: IExecuteFunctions, itemIndex: number): Promise<any> {
@@ -336,7 +337,8 @@ async function getAllCompanies(context: IExecuteFunctions, itemIndex: number): P
   if (simple) {
     responseData = responseData.map((item: any) => toSimpleCompany(item));
   }
-  return convertNumericStrings(responseData);
+  // v7 returns proper JSON types already; convertNumericStrings only needed for v1 string responses
+  return mauticVersion === 'v7' ? responseData : convertNumericStrings(responseData);
 }
 
 async function deleteCompany(context: IExecuteFunctions, itemIndex: number): Promise<any> {
@@ -347,7 +349,7 @@ async function deleteCompany(context: IExecuteFunctions, itemIndex: number): Pro
   if (mauticVersion === 'v7') {
     // v7 DELETE returns 204 no body
     await makeApiRequest(context, 'DELETE', `/v2/companies/${companyId}`);
-    return { id: companyId };
+    return { id: Number(companyId) };
   }
 
   const response = await makeApiRequest(context, 'DELETE', `/companies/${companyId}/delete`);
