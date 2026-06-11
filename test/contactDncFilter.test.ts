@@ -93,6 +93,17 @@ describe('contact DNC filtering (server-side)', () => {
     expect(mockedMakeApiRequest.mock.calls[0][4]).toMatchObject({ search: 'dnc:sms' });
   });
 
+  test('email + sms toggles produce a union (dnc:email OR dnc:sms)', async () => {
+    mockedMakeApiRequest.mockResolvedValueOnce({ contacts: contactsMap([{ id: 1 }]) });
+    const context = makeContext({
+      returnAll: false,
+      limit: 5,
+      options: { emailDncOnly: true, smsDncOnly: true, rawData: true },
+    });
+    await executeContactOperation(context, 'getAll', 0);
+    expect(mockedMakeApiRequest.mock.calls[0][4]).toMatchObject({ search: 'dnc:email OR dnc:sms' });
+  });
+
   test('returnAll with DNC pages server-side via makePaginatedRequest carrying the token', async () => {
     mockedMakePaginatedRequest.mockResolvedValueOnce(
       Object.values(contactsMap([{ id: 1 }, { id: 2 }, { id: 3 }])),

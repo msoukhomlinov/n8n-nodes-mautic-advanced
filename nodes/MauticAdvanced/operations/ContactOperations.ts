@@ -246,8 +246,12 @@ async function getAllContacts(context: IExecuteFunctions, itemIndex: number): Pr
   if (anyDncOnly) {
     searchParts.push('dnc:any');
   } else {
-    if (emailDncOnly) searchParts.push('dnc:email');
-    if (smsDncOnly) searchParts.push('dnc:sms');
+    const dncTokens: string[] = [];
+    if (emailDncOnly) dncTokens.push('dnc:email');
+    if (smsDncOnly) dncTokens.push('dnc:sms');
+    // Multiple specific channels = union (on email OR sms DNC); one token if only one is set.
+    if (dncTokens.length === 1) searchParts.push(dncTokens[0]);
+    else if (dncTokens.length > 1) searchParts.push(dncTokens.join(' OR '));
   }
 
   // Stage filter (always OR for multiple stages - a contact can only be in one stage)

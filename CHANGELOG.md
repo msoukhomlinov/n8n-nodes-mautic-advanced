@@ -1,5 +1,15 @@
 # Changelog
 
+## [1.3.7] - 2026-06-12
+
+### Changed
+
+- **Contact DNC filter — multiple channels now union (OR)**: When both *Email DNC Only* and *SMS DNC Only* are enabled, the filter now returns contacts on email **or** SMS DNC (`dnc:email OR dnc:sms`). Previously (pre-1.3.6, client-side) email took precedence and SMS was ignored; the 1.3.6 server-side change had briefly made it an intersection (AND). A single channel toggle and *Any DNC Only* are unchanged.
+
+### Tests
+
+- Added unit tests for the company owner-enrichment path: JSON-LD `@id` parsing, bare-IRI and null owner shapes, the bounded Get Many owner map with early-stop, `member`/`totalItems` (API Platform 4.x) key handling, empty-result skip, and the `unauthorized` warning path. Added a contact multi-channel DNC union test.
+
 ## [1.3.6] - 2026-06-12
 
 ### Performance
