@@ -1,5 +1,27 @@
 # Changelog
 
+## [1.3.9] - 2026-07-08
+
+### Changed
+
+- **Follow-up hardening to the 1.3.8 fix for #2** — refines the AI-tools zod/LangChain runtime resolution. Mirrors hardening already shipped in the sibling `n8n-nodes-hudu` package (issue #26 / PR #28), with the zod self-bundling exclusion below as an additional mautic-specific fix beyond that.
+  - **Documented `require.cache` instead of internal `Module._cache`**: `findCachedExports()` now reads the public, documented CommonJS `require.cache` alias (available directly in CJS module scope) rather than `require('module')._cache`, dropping a dependency on an undocumented Node internal. Each cache entry is null-guarded before its `exports` is read.
+  - **Narrowed zod cache-scan matching**: the require.cache fallback now matches only zod's own entry-point directories (`/zod/(lib|dist|index|v3|v4)`) instead of any `/zod/` path, avoiding accidental matches in zod-adjacent package names, and validates the exports via `ZodType` (the class n8n's own `normalizeToolSchema` does `instanceof` against — the meaningful correctness signal) plus the `object` factory, instead of `object`+`string`.
+  - **`require.main`-primary zod resolution + self-bundle exclusion (mautic-specific)**: `resolveZod()` now tries `createRequire(require.main)('zod')` first (n8n's own top-level zod copy), then the LangChain anchor, then the cache scan — all still fully lazy (on first Proxy access), never at module-import time. Because this package ships zod as a real `dependency` and imports it at node-registration time (`schema-generator.ts`), its OWN bundled zod is always resident in `require.cache` before any workflow runs; the cache scan now explicitly excludes any cache key belonging to this package's own bundled copy, so it can never select the wrong zod (a latent class-identity risk that would defeat n8n's `instanceof ZodType` checks — unlike some sibling packages, this one bundles zod directly). Memoization remains success-only, so a failed attempt never permanently disables retries.
+
+### Added
+
+- **`@langchain/core` declared as an optional `peerDependency`**: host-provided by n8n at runtime and declared as an optional peer for install-time drift visibility. Some package managers (e.g. pnpm with default `auto-install-peers`) may still install a local copy during development, but this package never imports it statically; it is only resolved at runtime from n8n's own module tree via the Proxy/cache-scan mechanism in `runtime.ts`.
+
+## [1.3.8] - 2026-07-08
+
+### Fixed
+
+- **Entire package failed to load under pnpm-strict-isolated n8n installs (#2)**: The AI-tools runtime resolved LangChain's `DynamicStructuredTool` and `zod` via filesystem anchor-probing (`@langchain/classic/agents`, then `langchain/agents`) **at module-import time**, throwing if both anchors failed. Under n8n's pnpm-strict-isolated installs (v2.29.x+), this package is installed outside n8n's own node_modules tree (e.g. `~/.n8n/nodes/`), so neither anchor could resolve — `@langchain/core` is only reachable from inside `@n8n/n8n-nodes-langchain`'s own isolated pnpm subtree. The resulting throw happened during n8n's node-directory-loader phase, which aborts loading the **entire package** on any file throw — so the plain, non-AI `mauticAdvanced` node and `MauticAdvancedTrigger` also failed to register (`Unrecognized node type`), not just the AI-tools node.
+  - Anchor resolution is now deferred from module-import time to first actual use, inside `supplyData()` (i.e. only when a connected AI tool is actually invoked at workflow-execution time), via `Proxy` wrappers around the LangChain constructor and the zod namespace.
+  - If the filesystem anchors still can't resolve, a `require.cache` scan is used as a fallback: n8n's own Agent/MCP Trigger machinery loads `@langchain/core/tools` before ever calling a connected tool's `supplyData()`, so by execution time the module is already resident in Node's process-global module cache regardless of install layout.
+  - Resolution is retried on every call until it succeeds — a failed attempt is not cached, since the require.cache fallback may only become available once n8n finishes loading its own langchain-dependent nodes.
+
 ## [1.3.7] - 2026-06-12
 
 ### Changed
