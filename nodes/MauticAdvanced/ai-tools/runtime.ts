@@ -12,226 +12,186 @@ type DynamicStructuredToolCtor = new (fields: {
 export type RuntimeZod = typeof ZodNamespace;
 
 /**
- * Anchor candidates — packages in n8n's dependency tree that can serve as a
- * createRequire() anchor to resolve @langchain/core/tools and zod from n8n's
- * own module tree (not this package's bundled devDependency copies).
+ * Runtime resolution of `zod` and `@langchain/core`'s DynamicStructuredTool.
  *
  * IMPORTANT: resolution must NEVER run at module-import time. n8n's
  * node-directory-loader requires every node file in this package (including
  * this one) purely to register node metadata, long before any workflow
  * executes — and it aborts loading the ENTIRE package if any one file throws
- * while being required. That used to be exactly what happened here: under
- * pnpm-strict-isolated n8n installs (v2.29.x+) this package is installed
- * outside n8n's own node_modules tree (e.g. ~/.n8n/nodes/), so neither
- * anchor below resolves at all — @langchain/classic/@langchain/core are only
- * reachable from inside @n8n/n8n-nodes-langchain's own isolated pnpm
- * subtree, which no filesystem-based require.resolve() from here can walk
- * into. The resulting throw took down the plain, non-AI `mauticAdvanced`
- * node and its trigger too, not just this AI-tools node.
+ * while being required. Doing filesystem resolution here at import time is
+ * exactly what took down the plain, non-AI `mauticAdvanced` node and its
+ * trigger under pnpm-strict-isolated installs (issue #2). Resolution is
+ * therefore deferred to first actual use inside the Proxy traps below, which
+ * only fire when a connected AI tool is invoked at workflow-execution time.
  *
- * Resolution is therefore deferred to first actual use, inside the Proxy
- * traps below (which only fire when a connected AI tool is invoked at
- * workflow-execution time via supplyData()). By then, n8n's own Agent/MCP
- * Trigger machinery has already loaded @langchain/core/tools itself (to run
- * its own tool-calling logic), so if the anchors still don't resolve, a
- * require.cache scan finds the exact module instance n8n itself loaded —
- * which works regardless of install layout.
+ * By execution time n8n's own Agent/MCP Trigger machinery has already loaded
+ * `@n8n/n8n-nodes-langchain` (and therefore zod and @langchain/core) into the
+ * process-global require.cache. We resolve the SAME module identity n8n uses —
+ * the copy its `normalizeToolSchema` runs `instanceof ZodType` / `instanceof
+ * ZodType`-style checks against — by two strategies, in order:
+ *
+ *   1. `require.main` — n8n's own entry point. For a correctly-installed
+ *      (non-isolated) host this lands on n8n's top-level copies directly.
+ *      Guarded for `require.main` being undefined (ESM launch, worker_threads /
+ *      queue-mode workers). We do NOT fall back to `__filename`: anchoring at
+ *      this file would resolve THIS package's own bundled copy, which is the
+ *      wrong module identity and fails n8n's `instanceof` checks silently.
+ *
+ *   2. An n8n-owned-tree anchor — a module already resident in require.cache
+ *      whose path belongs to a package only n8n owns and community nodes never
+ *      bundle. We `createRequire()` the dependency FROM that module's path, so
+ *      the resolved copy is tied to n8n's tree by identity — independent of
+ *      cache iteration order and of pnpm virtual-store path naming.
+ *
+ * If neither strategy resolves, we FAIL CLEAN (throw a diagnostic). We do NOT
+ * scan require.cache for a bare `zod` / `@langchain/core` and guess which copy
+ * is n8n's: under pnpm strict-isolated installs the cache key is the flat
+ * virtual-store realpath (`.../.pnpm/zod@3.x.x/node_modules/zod/...`) which does
+ * not encode the dependent package, so another installed community node's
+ * bundled copy can win the scan and yield a wrong-instance `ZodType` that
+ * n8n's `instanceof` check drops silently (issue #4). Returning nothing and
+ * throwing is safer than returning a possibly-wrong copy.
  */
-const ANCHOR_CANDIDATES = [
-  // primary: @langchain/classic is a direct dep of @n8n/nodes-langchain, stable since n8n 2.4.x.
-  // Its @langchain/core peerDep resolves to n8n's hoisted @langchain/core.
-  '@langchain/classic/agents',
-  // secondary: langchain package is in the n8n catalog and also has @langchain/core as peerDep.
-  'langchain/agents',
+
+// n8n-owned anchor packages, in priority order. `@n8n/n8n-nodes-langchain` is
+// always loaded at execution time and is the code that runs the instanceof
+// checks, so resolving from it guarantees identical module identity.
+const N8N_ANCHOR_PACKAGES = [
+  { name: '@n8n/n8n-nodes-langchain', pattern: /[\\/]@n8n[\\/]n8n-nodes-langchain[\\/]/ },
+  { name: '@langchain/classic', pattern: /[\\/]@langchain[\\/]classic[\\/]/ },
+  { name: 'n8n-workflow', pattern: /[\\/]n8n-workflow[\\/]/ },
+  { name: 'n8n-core', pattern: /[\\/]n8n-core[\\/]/ },
 ] as const;
 
 // Memoized ONLY on success — a failed attempt must not permanently disable
-// retries (e.g. the require.cache scan fallback below may only succeed on a
-// later call, once n8n has finished loading its own langchain-dependent
-// nodes).
-let _runtimeReq: NodeRequire | undefined;
+// retries, since the n8n-owned anchor may only become resident in require.cache
+// on a later call (once n8n has finished loading its langchain-dependent nodes).
+let _anchorReq: NodeRequire | undefined;
 let _anchorDiagnostic: string | null = null;
 
-function getRuntimeRequire(): NodeRequire | undefined {
-  if (_runtimeReq) return _runtimeReq;
+/**
+ * Scans Node's process-global module cache for a module whose resolved path
+ * belongs to an n8n-owned package, and returns a createRequire() anchored at
+ * that module's path. Must be called lazily (not at module load) — n8n requires
+ * node files for registration before any workflow runs, i.e. before the anchor
+ * packages are necessarily resident in cache.
+ */
+function getN8nAnchorRequire(): NodeRequire | undefined {
+  if (_anchorReq) return _anchorReq;
 
-  const tried: string[] = [];
-  for (const candidate of ANCHOR_CANDIDATES) {
-    try {
-      const resolved = require.resolve(candidate);
-      _runtimeReq = createRequire(resolved);
-      _anchorDiagnostic = `resolved via anchor: ${candidate}`;
-      return _runtimeReq;
-    } catch (e) {
-      tried.push(`${candidate}: ${(e as Error).message}`);
+  let cache: NodeJS.Dict<NodeModule> | undefined;
+  try {
+    // require.cache is the documented CommonJS alias for Module._cache, available
+    // directly in CJS module scope (this file compiles to CJS via tsc).
+    cache = require.cache;
+  } catch (_e) {
+    // best-effort — require.cache introspection is not guaranteed across Node versions
+    cache = undefined;
+  }
+  if (!cache) {
+    _anchorDiagnostic = 'require.cache unavailable';
+    return undefined;
+  }
+
+  const keys = Object.keys(cache);
+  for (const anchor of N8N_ANCHOR_PACKAGES) {
+    for (const key of keys) {
+      if (!anchor.pattern.test(key)) continue;
+      try {
+        _anchorReq = createRequire(key);
+        _anchorDiagnostic = `anchored on ${anchor.name}`;
+        return _anchorReq;
+      } catch (_e) {
+        // try the next matching key / anchor
+      }
     }
   }
 
-  _anchorDiagnostic = `Could not resolve LangChain anchor. Tried:\n${tried.join('\n')}`;
+  _anchorDiagnostic = `no n8n-owned anchor resident in require.cache (tried ${N8N_ANCHOR_PACKAGES.map(
+    (a) => a.name,
+  ).join(', ')})`;
   return undefined;
 }
 
 /**
- * Scans Node's process-global module cache (shared across every node_modules
- * tree in this process, regardless of who loaded what) for an already-loaded
- * module whose resolved path matches `pathPattern`, returning the first
- * match whose exports satisfy `validate`. Must be called lazily (not at
- * module load) — n8n requires node files for registration before any
- * workflow runs, i.e. before langchain/zod are necessarily loaded into cache.
+ * Yields candidate requires in resolution priority order: require.main first
+ * (guarded for undefined), then the n8n-owned-tree anchor. Symmetric for every
+ * dependency — no bare-cache scan, no self-exclusion.
  */
-function findCachedExports<T>(
-  pathPattern: RegExp,
-  validate: (exports: Record<string, unknown>) => T | undefined,
-  excludeKey?: (key: string) => boolean,
-): T | undefined {
-  try {
-    // require.cache is the public, documented CommonJS alias that points at the exact
-    // same underlying object as the internal Module._cache. It is available directly in
-    // CJS module scope (this file compiles to CJS via tsc), so no require('module') needed.
-    const cache = require.cache;
-    if (!cache) return undefined;
-    for (const key of Object.keys(cache)) {
-      if (!pathPattern.test(key)) continue;
-      if (excludeKey && excludeKey(key)) continue;
-      const entry = cache[key];
-      if (!entry) continue;
-      const result = validate(entry.exports as Record<string, unknown>);
-      if (result !== undefined) return result;
+function* candidateRequires(): Generator<{ req: NodeRequire; source: string }> {
+  if (require.main?.filename) {
+    try {
+      yield { req: createRequire(require.main.filename), source: 'require.main' };
+    } catch (_e) {
+      // require.main resolution unavailable — fall through to anchor
     }
-  } catch (_e) {
-    // best-effort — require.cache introspection is not guaranteed across Node versions
   }
-  return undefined;
+  const anchorReq = getN8nAnchorRequire();
+  if (anchorReq) {
+    yield { req: anchorReq, source: _anchorDiagnostic ?? 'n8n-owned anchor' };
+  }
 }
 
 let _RuntimeDynamicStructuredTool: DynamicStructuredToolCtor | undefined;
 let _runtimeZod: RuntimeZod | undefined;
 let _langchainLoadError: string | null = null;
+let _langchainDiagnostic: string | null = null;
 let _zodLoadError: string | null = null;
 let _zodDiagnostic: string | null = null;
 
 function resolveDynamicStructuredTool(): DynamicStructuredToolCtor | undefined {
   if (_RuntimeDynamicStructuredTool) return _RuntimeDynamicStructuredTool;
 
-  const runtimeReq = getRuntimeRequire();
-  if (runtimeReq) {
+  const attempts: string[] = [];
+  for (const { req, source } of candidateRequires()) {
     try {
-      const coreTools = runtimeReq('@langchain/core/tools') as Record<string, any>;
+      const coreTools = req('@langchain/core/tools') as Record<string, unknown>;
       if (typeof coreTools?.['DynamicStructuredTool'] === 'function') {
         _RuntimeDynamicStructuredTool = coreTools[
           'DynamicStructuredTool'
         ] as DynamicStructuredToolCtor;
+        _langchainDiagnostic = `resolved DynamicStructuredTool via ${source}`;
+        _langchainLoadError = null;
         return _RuntimeDynamicStructuredTool;
       }
+      attempts.push(`${source}: @langchain/core/tools lacked DynamicStructuredTool`);
     } catch (e) {
-      _langchainLoadError = (e as Error).message;
+      attempts.push(`${source}: ${(e as Error).message}`);
     }
   }
 
-  // Fallback for pnpm-isolated installs where no filesystem anchor reaches
-  // @langchain/core at all: it is loaded by n8n's own Agent/MCP Trigger
-  // machinery before our supplyData() ever runs, so grab it straight out of
-  // require.cache once it is resident.
-  const cached = findCachedExports(/[\\/]@langchain[\\/]core[\\/]/, (exports) =>
-    typeof exports['DynamicStructuredTool'] === 'function'
-      ? (exports['DynamicStructuredTool'] as DynamicStructuredToolCtor)
-      : undefined,
-  );
-  if (cached) {
-    _RuntimeDynamicStructuredTool = cached;
-    _langchainLoadError = null;
-  }
-  return _RuntimeDynamicStructuredTool;
+  _langchainLoadError = attempts.length
+    ? attempts.join('; ')
+    : 'no n8n-owned resolution source available (require.main undefined, no anchor in cache)';
+  return undefined;
 }
 
 function resolveZod(): RuntimeZod | undefined {
   if (_runtimeZod) return _runtimeZod;
 
-  // Three-step resolution, in priority order: require.main → anchor → require.cache scan.
-  //
-  // Primary path: resolve zod starting from n8n's own main entry point's module tree
-  // (require.main). For a correctly-installed (non-isolated) setup this lands on n8n's
-  // top-level zod — the exact copy n8n's own normalizeToolSchema does `instanceof ZodType`
-  // against. Even under pnpm-strict isolation this is a DIFFERENT resolution path than this
-  // package's own local require('zod'), so it is far more likely to reach n8n's real copy
-  // (or fail cleanly) than to silently return this package's OWN bundled zod. Resolved
-  // lazily here (NOT at module top level) so node registration never triggers it — that
-  // laziness is the entire point of this fix (#2).
-  //
-  // Only anchor at require.main when it is actually defined. When it is undefined (ESM-
-  // launched n8n, worker_threads / queue-mode workers — exactly the deployment mode #2 was
-  // filed against), there is NO useful main to anchor at: falling back to `__filename` would
-  // anchor at THIS file (mautic's own runtime.js), whose `require.resolve('zod')` lands on
-  // this package's OWN bundled zod — the copy that fails n8n's `instanceof ZodType` check.
-  // So resolve-then-check the path and skip it if it points into this package's own tree,
-  // reusing the same exclusion substring as the cache-scan path below.
-  if (require.main?.filename) {
+  const attempts: string[] = [];
+  for (const { req, source } of candidateRequires()) {
     try {
-      const mainReq = createRequire(require.main.filename);
-      const resolvedPath = mainReq.resolve('zod');
-      if (!resolvedPath.includes('n8n-nodes-mautic-advanced')) {
-        _runtimeZod = mainReq('zod') as RuntimeZod;
-        if (_runtimeZod) {
-          _zodDiagnostic = 'resolved zod via require.main';
-          _zodLoadError = null;
-          return _runtimeZod;
-        }
+      const z = req('zod') as Record<string, unknown>;
+      // Validate the exports look like zod via `ZodType` (the class n8n's
+      // normalizeToolSchema does `instanceof` against — the meaningful correctness
+      // signal) plus the `object` factory our schema-generator calls.
+      if (typeof z?.['ZodType'] === 'function' && typeof z?.['object'] === 'function') {
+        _runtimeZod = z as unknown as RuntimeZod;
+        _zodDiagnostic = `resolved zod via ${source}`;
+        _zodLoadError = null;
+        return _runtimeZod;
       }
+      attempts.push(`${source}: module did not look like zod`);
     } catch (e) {
-      _zodLoadError = (e as Error).message;
+      attempts.push(`${source}: ${(e as Error).message}`);
     }
   }
 
-  // Secondary path: the existing @langchain/classic / langchain anchor. Same resolve-then-
-  // check exclusion for defense-in-depth consistency — very unlikely to ever resolve into
-  // this package's own tree, but structurally guarded identically to the other two paths.
-  const runtimeReq = getRuntimeRequire();
-  if (runtimeReq) {
-    try {
-      const resolvedPath = runtimeReq.resolve('zod');
-      if (!resolvedPath.includes('n8n-nodes-mautic-advanced')) {
-        _runtimeZod = runtimeReq('zod') as RuntimeZod;
-        if (_runtimeZod) {
-          _zodDiagnostic = 'resolved zod via anchor';
-          _zodLoadError = null;
-          return _runtimeZod;
-        }
-      }
-    } catch (e) {
-      _zodLoadError = (e as Error).message;
-    }
-  }
-
-  // Tertiary path: scan require.cache for an already-resident zod once neither
-  // filesystem resolution reaches it (pnpm-strict-isolated installs). The path regex is
-  // narrowed to zod's own entry-point directories (lib/dist/index/v3/v4) so it never
-  // matches zod-adjacent package names (e.g. zod-to-json-schema). Validate the exports
-  // look like zod via `ZodType` (the class n8n's normalizeToolSchema does `instanceof`
-  // against — the meaningful correctness signal) plus the `object` factory our
-  // schema-generator calls.
-  //
-  // Exclusion guard: this package declares zod as a REAL dependency and imports it at
-  // node-registration time (schema-generator.ts), so this package's OWN bundled zod is
-  // ALWAYS resident in require.cache — potentially earlier in iteration order than n8n's.
-  // We specifically want a DIFFERENT copy (n8n's), because a self-bundled copy would fail
-  // n8n's `instanceof ZodType` class-identity check. So skip any cache key belonging to
-  // this package's own bundled zod. (The pathPattern has already matched the zod segment,
-  // so a package-name match on the key is sufficient and robust to both nested
-  // `.../n8n-nodes-mautic-advanced/node_modules/zod/...` and flatter install layouts.)
-  const cached = findCachedExports(
-    /[\\/]zod[\\/](lib|dist|index|v3|v4)/,
-    (exports) =>
-      typeof exports['ZodType'] === 'function' && typeof exports['object'] === 'function'
-        ? (exports as unknown as RuntimeZod)
-        : undefined,
-    (key) => key.includes('n8n-nodes-mautic-advanced'),
-  );
-  if (cached) {
-    _runtimeZod = cached;
-    _zodLoadError = null;
-    _zodDiagnostic = 'resolved zod via require.cache scan (pnpm-isolated install)';
-  }
-  return _runtimeZod;
+  _zodLoadError = attempts.length
+    ? attempts.join('; ')
+    : 'no n8n-owned resolution source available (require.main undefined, no anchor in cache)';
+  return undefined;
 }
 
 // IMPORTANT: Proxy target MUST be `function () {}`, not `{}`.
@@ -245,9 +205,11 @@ export const RuntimeDynamicStructuredTool: DynamicStructuredToolCtor = new Proxy
       const ctor = resolveDynamicStructuredTool();
       if (!ctor) {
         throw new Error(
-          `[MauticAdvancedAiTools] Could not resolve LangChain's DynamicStructuredTool. ` +
-            `Ensure @n8n/nodes-langchain is installed in n8n's node_modules.` +
-            (_anchorDiagnostic ? ` Diagnostic: ${_anchorDiagnostic}` : '') +
+          `[MauticAdvancedAiTools] Could not resolve LangChain's DynamicStructuredTool ` +
+            `via require.main or an n8n-owned require.cache anchor. ` +
+            `Ensure @n8n/n8n-nodes-langchain is installed in n8n's node_modules.` +
+            (_anchorDiagnostic ? ` Anchor: ${_anchorDiagnostic}.` : '') +
+            (_langchainDiagnostic ? ` ${_langchainDiagnostic}.` : '') +
             (_langchainLoadError ? ` Load error: ${_langchainLoadError}` : ''),
         );
       }
@@ -273,13 +235,10 @@ export const runtimeZod: RuntimeZod = new Proxy({} as RuntimeZod, {
     if (!z) {
       throw new Error(
         `[MauticAdvancedAiTools] Could not resolve zod (accessing .${String(prop)}) ` +
-          `via require.main, LangChain anchor, or require.cache scan. ` +
-          `Ensure @n8n/nodes-langchain is installed in n8n's node_modules.` +
-          (_zodDiagnostic
-            ? ` Diagnostic: ${_zodDiagnostic}`
-            : _anchorDiagnostic
-              ? ` Diagnostic: ${_anchorDiagnostic}`
-              : '') +
+          `via require.main or an n8n-owned require.cache anchor. ` +
+          `Ensure @n8n/n8n-nodes-langchain is installed in n8n's node_modules.` +
+          (_anchorDiagnostic ? ` Anchor: ${_anchorDiagnostic}.` : '') +
+          (_zodDiagnostic ? ` ${_zodDiagnostic}.` : '') +
           (_zodLoadError ? ` Load error: ${_zodLoadError}` : ''),
       );
     }
