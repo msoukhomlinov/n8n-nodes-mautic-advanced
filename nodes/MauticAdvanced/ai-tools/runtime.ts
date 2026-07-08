@@ -63,22 +63,26 @@ const N8N_ANCHOR_PACKAGES = [
   { name: 'n8n-core', pattern: /[\\/]n8n-core[\\/]/ },
 ] as const;
 
-// Memoized ONLY on success — a failed attempt must not permanently disable
-// retries, since the n8n-owned anchor may only become resident in require.cache
-// on a later call (once n8n has finished loading its langchain-dependent nodes).
-let _anchorReq: NodeRequire | undefined;
 let _anchorDiagnostic: string | null = null;
 
 /**
- * Scans Node's process-global module cache for a module whose resolved path
- * belongs to an n8n-owned package, and returns a createRequire() anchored at
- * that module's path. Must be called lazily (not at module load) — n8n requires
+ * Yields a createRequire() for EACH n8n-owned anchor package currently resident
+ * in Node's process-global module cache, in the priority order of
+ * N8N_ANCHOR_PACKAGES. Must be called lazily (not at module load) — n8n requires
  * node files for registration before any workflow runs, i.e. before the anchor
  * packages are necessarily resident in cache.
+ *
+ * IMPORTANT: this yields ALL available anchors rather than memoizing the first
+ * one found. Different anchors resolve different dependencies: `n8n-workflow` /
+ * `n8n-core` are imported by this package at registration time, so they are
+ * resident FIRST — but they can resolve `zod` and NOT `@langchain/core/tools`.
+ * Memoizing `n8n-workflow` as THE anchor would permanently starve
+ * DynamicStructuredTool resolution even after `@langchain/*` later loads. So the
+ * caller tries each anchor against the actual dependency and memoizes only at
+ * the dependency level (on success). Re-scanning the cache each unresolved call
+ * is cheap and only happens until the dependency resolves.
  */
-function getN8nAnchorRequire(): NodeRequire | undefined {
-  if (_anchorReq) return _anchorReq;
-
+function* iterN8nAnchorRequires(): Generator<{ req: NodeRequire; source: string }> {
   let cache: NodeJS.Dict<NodeModule> | undefined;
   try {
     // require.cache is the documented CommonJS alias for Module._cache, available
@@ -90,46 +94,46 @@ function getN8nAnchorRequire(): NodeRequire | undefined {
   }
   if (!cache) {
     _anchorDiagnostic = 'require.cache unavailable';
-    return undefined;
+    return;
   }
 
   const keys = Object.keys(cache);
+  const available: string[] = [];
   for (const anchor of N8N_ANCHOR_PACKAGES) {
-    for (const key of keys) {
-      if (!anchor.pattern.test(key)) continue;
-      try {
-        _anchorReq = createRequire(key);
-        _anchorDiagnostic = `anchored on ${anchor.name}`;
-        return _anchorReq;
-      } catch (_e) {
-        // try the next matching key / anchor
-      }
+    const key = keys.find((k) => anchor.pattern.test(k));
+    if (!key) continue;
+    try {
+      const req = createRequire(key);
+      available.push(anchor.name);
+      yield { req, source: `anchor ${anchor.name}` };
+    } catch (_e) {
+      // createRequire failed for this anchor — try the next
     }
   }
 
-  _anchorDiagnostic = `no n8n-owned anchor resident in require.cache (tried ${N8N_ANCHOR_PACKAGES.map(
-    (a) => a.name,
-  ).join(', ')})`;
-  return undefined;
+  _anchorDiagnostic = available.length
+    ? `anchors available: ${available.join(', ')}`
+    : `no n8n-owned anchor resident in require.cache (tried ${N8N_ANCHOR_PACKAGES.map(
+        (a) => a.name,
+      ).join(', ')})`;
 }
 
 /**
  * Yields candidate requires in resolution priority order: require.main first
- * (guarded for undefined), then the n8n-owned-tree anchor. Symmetric for every
- * dependency — no bare-cache scan, no self-exclusion.
+ * (guarded for undefined), then EACH n8n-owned-tree anchor. Symmetric for every
+ * dependency — no bare-cache scan, no self-exclusion. The caller must try the
+ * requested dependency against each yielded require and stop at the first that
+ * loads it.
  */
 function* candidateRequires(): Generator<{ req: NodeRequire; source: string }> {
   if (require.main?.filename) {
     try {
       yield { req: createRequire(require.main.filename), source: 'require.main' };
     } catch (_e) {
-      // require.main resolution unavailable — fall through to anchor
+      // require.main resolution unavailable — fall through to anchors
     }
   }
-  const anchorReq = getN8nAnchorRequire();
-  if (anchorReq) {
-    yield { req: anchorReq, source: _anchorDiagnostic ?? 'n8n-owned anchor' };
-  }
+  yield* iterN8nAnchorRequires();
 }
 
 let _RuntimeDynamicStructuredTool: DynamicStructuredToolCtor | undefined;
