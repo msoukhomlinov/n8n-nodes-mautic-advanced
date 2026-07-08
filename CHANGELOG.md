@@ -1,5 +1,18 @@
 # Changelog
 
+## [1.3.9] - 2026-07-08
+
+### Changed
+
+- **Follow-up hardening to the 1.3.8 fix for #2** — refines the AI-tools zod/LangChain runtime resolution. Mirrors hardening already shipped in the sibling `n8n-nodes-hudu` package (issue #26 / PR #28), with the zod self-bundling exclusion below as an additional mautic-specific fix beyond that.
+  - **Documented `require.cache` instead of internal `Module._cache`**: `findCachedExports()` now reads the public, documented CommonJS `require.cache` alias (available directly in CJS module scope) rather than `require('module')._cache`, dropping a dependency on an undocumented Node internal. Each cache entry is null-guarded before its `exports` is read.
+  - **Narrowed zod cache-scan matching**: the require.cache fallback now matches only zod's own entry-point directories (`/zod/(lib|dist|index|v3|v4)`) instead of any `/zod/` path, avoiding accidental matches in zod-adjacent package names, and validates the exports via `ZodType` (the class n8n's own `normalizeToolSchema` does `instanceof` against — the meaningful correctness signal) plus the `object` factory, instead of `object`+`string`.
+  - **`require.main`-primary zod resolution + self-bundle exclusion (mautic-specific)**: `resolveZod()` now tries `createRequire(require.main)('zod')` first (n8n's own top-level zod copy), then the LangChain anchor, then the cache scan — all still fully lazy (on first Proxy access), never at module-import time. Because this package ships zod as a real `dependency` and imports it at node-registration time (`schema-generator.ts`), its OWN bundled zod is always resident in `require.cache` before any workflow runs; the cache scan now explicitly excludes any cache key belonging to this package's own bundled copy, so it can never select the wrong zod (a latent class-identity risk that would defeat n8n's `instanceof ZodType` checks — unlike some sibling packages, this one bundles zod directly). Memoization remains success-only, so a failed attempt never permanently disables retries.
+
+### Added
+
+- **`@langchain/core` declared as an optional `peerDependency`**: host-provided by n8n at runtime (never installed by this package — a duplicate copy would break n8n's `instanceof` class-identity checks). Declaring it as an optional peer documents the host-provided contract and gives an install-time drift signal without changing resolution.
+
 ## [1.3.8] - 2026-07-08
 
 ### Fixed
