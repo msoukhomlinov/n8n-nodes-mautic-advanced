@@ -157,27 +157,45 @@ function resolveZod(): RuntimeZod | undefined {
   // (or fail cleanly) than to silently return this package's OWN bundled zod. Resolved
   // lazily here (NOT at module top level) so node registration never triggers it — that
   // laziness is the entire point of this fix (#2).
-  try {
-    const mainReq = createRequire(require.main?.filename ?? __filename);
-    _runtimeZod = mainReq('zod') as RuntimeZod;
-    if (_runtimeZod) {
-      _zodDiagnostic = 'resolved zod via require.main';
-      _zodLoadError = null;
-      return _runtimeZod;
+  //
+  // Only anchor at require.main when it is actually defined. When it is undefined (ESM-
+  // launched n8n, worker_threads / queue-mode workers — exactly the deployment mode #2 was
+  // filed against), there is NO useful main to anchor at: falling back to `__filename` would
+  // anchor at THIS file (mautic's own runtime.js), whose `require.resolve('zod')` lands on
+  // this package's OWN bundled zod — the copy that fails n8n's `instanceof ZodType` check.
+  // So resolve-then-check the path and skip it if it points into this package's own tree,
+  // reusing the same exclusion substring as the cache-scan path below.
+  if (require.main?.filename) {
+    try {
+      const mainReq = createRequire(require.main.filename);
+      const resolvedPath = mainReq.resolve('zod');
+      if (!resolvedPath.includes('n8n-nodes-mautic-advanced')) {
+        _runtimeZod = mainReq('zod') as RuntimeZod;
+        if (_runtimeZod) {
+          _zodDiagnostic = 'resolved zod via require.main';
+          _zodLoadError = null;
+          return _runtimeZod;
+        }
+      }
+    } catch (e) {
+      _zodLoadError = (e as Error).message;
     }
-  } catch (e) {
-    _zodLoadError = (e as Error).message;
   }
 
-  // Secondary path: the existing @langchain/classic / langchain anchor.
+  // Secondary path: the existing @langchain/classic / langchain anchor. Same resolve-then-
+  // check exclusion for defense-in-depth consistency — very unlikely to ever resolve into
+  // this package's own tree, but structurally guarded identically to the other two paths.
   const runtimeReq = getRuntimeRequire();
   if (runtimeReq) {
     try {
-      _runtimeZod = runtimeReq('zod') as RuntimeZod;
-      if (_runtimeZod) {
-        _zodDiagnostic = 'resolved zod via anchor';
-        _zodLoadError = null;
-        return _runtimeZod;
+      const resolvedPath = runtimeReq.resolve('zod');
+      if (!resolvedPath.includes('n8n-nodes-mautic-advanced')) {
+        _runtimeZod = runtimeReq('zod') as RuntimeZod;
+        if (_runtimeZod) {
+          _zodDiagnostic = 'resolved zod via anchor';
+          _zodLoadError = null;
+          return _runtimeZod;
+        }
       }
     } catch (e) {
       _zodLoadError = (e as Error).message;

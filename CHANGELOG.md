@@ -11,7 +11,7 @@
 
 ### Added
 
-- **`@langchain/core` declared as an optional `peerDependency`**: host-provided by n8n at runtime (never installed by this package — a duplicate copy would break n8n's `instanceof` class-identity checks). Declaring it as an optional peer documents the host-provided contract and gives an install-time drift signal without changing resolution.
+- **`@langchain/core` declared as an optional `peerDependency`**: host-provided by n8n at runtime and declared as an optional peer for install-time drift visibility. Some package managers (e.g. pnpm with default `auto-install-peers`) may still install a local copy during development, but this package never imports it statically; it is only resolved at runtime from n8n's own module tree via the Proxy/cache-scan mechanism in `runtime.ts`.
 
 ## [1.3.8] - 2026-07-08
 
