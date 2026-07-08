@@ -1,5 +1,15 @@
 # Changelog
 
+## [1.3.10] - 2026-07-08
+
+### Fixed
+
+- **AI-tools runtime resolution picked the wrong `zod` / `@langchain/core` copy under pnpm-isolated hosts (#4)** — supersedes the 1.3.9 self-exclusion guard, aligning with the revised design landed in `n8n-nodes-connectwise-cpq` PR #1. The 1.3.9 fallback relied on a blind `require.cache` scan for a bare `zod` / `@langchain/core` entry, guarded by excluding this package's own name from the cache key. Under pnpm strict-isolated installs that guard is ineffective: the cache key is the flat virtual-store realpath (`.../.pnpm/zod@3.x.x/node_modules/zod/...`), which does **not** encode the dependent package — so excluding only `n8n-nodes-mautic-advanced` still let *another* installed community node's bundled `zod` win the scan, yielding a wrong-instance `ZodType` that n8n's `instanceof ZodType` check in `normalizeToolSchema` drops silently (tool schema quietly registered with no/blank parameters, intermittent across restarts by cache iteration order).
+  - **Positive n8n-owned-tree anchor**: `runtime.ts` now resolves both deps by scanning `require.cache` for a module whose key belongs to a package only n8n owns and community nodes never bundle — `@n8n/n8n-nodes-langchain`, `@langchain/classic`, `n8n-workflow`, `n8n-core` (in that priority order) — then `createRequire()`s the dependency from that module's path. This ties the resolved copy to n8n's tree by *identity*, independent of cache iteration order and pnpm store-path naming.
+  - **Symmetric `require.main`-first resolution for BOTH deps**: `require.main` is tried first for `zod` *and* `DynamicStructuredTool` (previously only zod did this), guarded for `require.main` being undefined (ESM launch / queue-mode workers), with no `__filename` fallback (which would resolve this package's own bundled copy — the wrong identity).
+  - **Removed the blind bare-`zod` / bare-`@langchain/core` cache scan and the name-based self-exclusion entirely**: the anchor package's identity is now the guard. On total failure the Proxies throw a clear diagnostic rather than returning a possibly-wrong copy.
+  - The 1.3.8 deferral (resolution moved out of module-import time) is unchanged and remains the fix for #2. `zod` stays a production dependency with its static import in `schema-generator.ts`; `@langchain/core` stays an optional peerDependency.
+
 ## [1.3.9] - 2026-07-08
 
 ### Changed
