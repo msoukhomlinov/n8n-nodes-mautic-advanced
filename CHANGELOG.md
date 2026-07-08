@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.3.8] - 2026-07-08
+
+### Fixed
+
+- **Entire package failed to load under pnpm-strict-isolated n8n installs (#2)**: The AI-tools runtime resolved LangChain's `DynamicStructuredTool` and `zod` via filesystem anchor-probing (`@langchain/classic/agents`, then `langchain/agents`) **at module-import time**, throwing if both anchors failed. Under n8n's pnpm-strict-isolated installs (v2.29.x+), this package is installed outside n8n's own node_modules tree (e.g. `~/.n8n/nodes/`), so neither anchor could resolve — `@langchain/core` is only reachable from inside `@n8n/n8n-nodes-langchain`'s own isolated pnpm subtree. The resulting throw happened during n8n's node-directory-loader phase, which aborts loading the **entire package** on any file throw — so the plain, non-AI `mauticAdvanced` node and `MauticAdvancedTrigger` also failed to register (`Unrecognized node type`), not just the AI-tools node.
+  - Anchor resolution is now deferred from module-import time to first actual use, inside `supplyData()` (i.e. only when a connected AI tool is actually invoked at workflow-execution time), via `Proxy` wrappers around the LangChain constructor and the zod namespace.
+  - If the filesystem anchors still can't resolve, a `require.cache` scan is used as a fallback: n8n's own Agent/MCP Trigger machinery loads `@langchain/core/tools` before ever calling a connected tool's `supplyData()`, so by execution time the module is already resident in Node's process-global module cache regardless of install layout.
+  - Resolution is retried on every call until it succeeds — a failed attempt is not cached, since the require.cache fallback may only become available once n8n finishes loading its own langchain-dependent nodes.
+
 ## [1.3.7] - 2026-06-12
 
 ### Changed
