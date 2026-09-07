@@ -177,4 +177,50 @@ describe('contact fields to return', () => {
       node.methods.loadOptions.getContactFields.call(loadOptionsContext as never),
     ).resolves.not.toEqual(expect.arrayContaining([{ name: 'Tags', value: 'tags' }]));
   });
+
+  test('non-raw mode flattens to { id, owner, ...fields.all } and drops fields, dateModified, doNotContact', () => {
+    const contact = {
+      id: 1,
+      owner: null,
+      dateModified: '2026-01-01T00:00:00+00:00',
+      doNotContact: { email: { isDnc: true } },
+      fields: { all: { email: 'a@b.test', autotask_contact_id: '42' } },
+    };
+
+    const result = processContactFields([contact], {});
+
+    expect(result).toEqual([{ id: 1, owner: null, email: 'a@b.test', autotask_contact_id: '42' }]);
+    expect(result[0]).not.toHaveProperty('fields');
+    expect(result[0]).not.toHaveProperty('dateModified');
+    expect(result[0]).not.toHaveProperty('doNotContact');
+  });
+
+  test('raw mode returns the full contact response untouched', () => {
+    const contact = {
+      id: 1,
+      owner: null,
+      dateModified: '2026-01-01T00:00:00+00:00',
+      doNotContact: { email: { isDnc: true } },
+      fields: { all: { email: 'a@b.test', autotask_contact_id: '42' } },
+    };
+
+    expect(processContactFields([contact], { rawData: true })).toEqual([contact]);
+  });
+
+  test('raw mode still filters to the selected fields when Fields to Return is set', () => {
+    const contact = {
+      id: 1,
+      owner: null,
+      dateModified: '2026-01-01T00:00:00+00:00',
+      doNotContact: { email: { isDnc: true } },
+      fields: { all: { email: 'a@b.test', autotask_contact_id: '42' } },
+    };
+
+    const result = processContactFields([contact], { rawData: true, fieldsToReturn: ['email'] });
+
+    expect(result).toEqual([{ email: 'a@b.test' }]);
+    expect(result[0]).not.toHaveProperty('id');
+    expect(result[0]).not.toHaveProperty('dateModified');
+    expect(result[0]).not.toHaveProperty('doNotContact');
+  });
 });
