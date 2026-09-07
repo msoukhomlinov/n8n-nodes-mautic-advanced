@@ -190,7 +190,7 @@ export const contactFields: INodeProperties[] = [
         type: 'boolean',
         default: true,
         description:
-          'Controls the shape of the returned data. When this option is not enabled, each contact is flattened to { id, owner, ...fields.all } — the fields object (including fields.all custom fields), dateModified, and doNotContact are NOT included in the output. When enabled, the full raw Mautic contact response is returned with all data intact.',
+          'Controls the shape of the returned data. When this option is not enabled, each contact is flattened to { id, owner, ...fields.all } — the fields object (including fields.all custom fields), dateModified, and doNotContact are NOT included in the output. When enabled, the full raw Mautic contact response is returned with all data intact, unless Fields to Return is also selected, in which case only the selected fields are returned.',
       },
     ],
   },
@@ -768,7 +768,7 @@ export const contactFields: INodeProperties[] = [
         type: 'boolean',
         default: true,
         description:
-          'Controls the shape of the returned data. When this option is not enabled, each contact is flattened to { id, owner, ...fields.all } — the fields object (including fields.all custom fields), dateModified, and doNotContact are NOT included in the output. When enabled, the full raw Mautic contact response is returned with all data intact.',
+          'Controls the shape of the returned data. When this option is not enabled, each contact is flattened to { id, owner, ...fields.all } — the fields object (including fields.all custom fields), dateModified, and doNotContact are NOT included in the output. When enabled, the full raw Mautic contact response is returned with all data intact, unless Fields to Return is also selected, in which case only the selected fields are returned.',
       },
     ],
   },
@@ -1437,7 +1437,7 @@ export const contactFields: INodeProperties[] = [
         type: 'boolean',
         default: true,
         description:
-          'Controls the shape of the returned data. When this option is not enabled, each contact is flattened to { id, owner, ...fields.all } — the fields object (including fields.all custom fields), dateModified, and doNotContact are NOT included in the output. When enabled, the full raw Mautic contact response is returned with all data intact.',
+          'Controls the shape of the returned data. When this option is not enabled, each contact is flattened to { id, owner, ...fields.all } — the fields object (including fields.all custom fields), dateModified, and doNotContact are NOT included in the output. When enabled, the full raw Mautic contact response is returned with all data intact, unless Fields to Return is also selected, in which case only the selected fields are returned.',
       },
     ],
   },
@@ -1617,7 +1617,7 @@ export const contactFields: INodeProperties[] = [
         type: 'boolean',
         default: true,
         description:
-          'Controls the shape of the returned data. When this option is not enabled, each contact is flattened to { id, owner, ...fields.all } — the fields object (including fields.all custom fields), dateModified, and doNotContact are NOT included in the output. When enabled, the full raw Mautic contact response is returned with all data intact.',
+          'Controls the shape of the returned data. When this option is not enabled, each contact is flattened to { id, owner, ...fields.all } — the fields object (including fields.all custom fields), dateModified, and doNotContact are NOT included in the output. When enabled, the full raw Mautic contact response is returned with all data intact, unless Fields to Return is also selected, in which case only the selected fields are returned.',
       },
       {
         displayName: 'Search',

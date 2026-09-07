@@ -103,4 +103,25 @@ describe('contact editDoNotContactList', () => {
       { reason: 3, comments: 'ok' },
     );
   });
+
+  test('treats a stored null additionalFields as empty instead of crashing on property read', async () => {
+    mockedMakeApiRequest.mockResolvedValueOnce({ contact: { id: 7 } });
+
+    const context = makeContext({
+      contactId: '7',
+      action: 'add',
+      channel: 'email',
+      additionalFields: null,
+    });
+
+    await executeContactOperation(context, 'editDoNotContactList', 0);
+
+    expect(mockedMakeApiRequest).toHaveBeenCalledTimes(1);
+    expect(mockedMakeApiRequest).toHaveBeenCalledWith(
+      context,
+      'POST',
+      '/contacts/7/dnc/email/add',
+      { reason: 3 },
+    );
+  });
 });

@@ -407,7 +407,7 @@ async function editDoNotContactList(context: IExecuteFunctions, itemIndex: numbe
   const contactId = getRequiredParam(context, 'contactId', itemIndex);
   const action = getRequiredParam(context, 'action', itemIndex);
   const channel = getRequiredParam(context, 'channel', itemIndex);
-  const additionalFields = getOptionalParam(context, 'additionalFields', itemIndex, {}) as {
+  const additionalFields = (getOptionalParam(context, 'additionalFields', itemIndex, {}) ?? {}) as {
     [key: string]: any;
   };
   const reason = additionalFields.reason !== undefined ? additionalFields.reason : 3; // Default to Manual (3)
