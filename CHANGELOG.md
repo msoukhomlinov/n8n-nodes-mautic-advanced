@@ -1,5 +1,16 @@
 # Changelog
 
+## [1.3.11] - 2026-09-08
+
+### Fixed
+
+- **`editDoNotContactList` now actually sends its `additionalFields` (comments, reason, channel IDs) to Mautic (#8, PR #10)** — the selected Do-Not-Contact edit fields were silently dropped before the API call; they are now serialized into the payload, null-guarded so empty selections are omitted rather than sent as `null`.
+- **`getAll` contacts no longer strips `fields.all` / `dateModified` / `doNotContact` in default (non-rawData) mode (#9, PR #10)** — raw-data response processing preserves the requested `fields.all` / `dateModified` / `doNotContact` columns instead of discarding them; `rawData` parameter wording is now scoped to the operations that actually expose *Fields to Return*.
+
+### Changed
+
+- **Development-toolchain dependency sweeps (PR #6, 2026-08-02; PR #11, 2026-09-08)** — added `pnpm-workspace.yaml` overrides hardening dev-only packages (axios 1.18.0, esbuild 0.25.0, flatted 3.4.2, follow-redirects 1.16.0, form-data 4.0.6, js-yaml 4.3.1, lodash 4.18.1, picomatch 2.3.2, postcss 8.5.23); production dependencies and runtime behavior are unchanged. Documented decisions: lodash pins to 4.18.1 rather than 4.18.0 (npm-deprecated "bad release"); `decode-uri-component` stays on CJS 0.2.2 because the only fixed release (0.5.0) is ESM-only and breaks the legacy CJS gulp toolchain; braces / vite / vitest / brace-expansion / minimatch stay on their current majors (rationale in the PR #11 body).
+
 ## [1.3.10] - 2026-07-08
 
 ### Fixed
