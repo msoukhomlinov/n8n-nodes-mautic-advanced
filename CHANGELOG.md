@@ -1,5 +1,15 @@
 # Changelog
 
+## [1.3.12] - 2026-10-18
+
+### Changed
+
+- **Development-toolchain dependency sweep (PR #12)** — resolved all 22 open Dependabot alerts (development scope only: runtime dependencies `zod` / `change-case` / `@types/change-case` and runtime behavior are unchanged). vitest 2.1.9 → 4.1.12 (direct devDep; `@vitest/mocker` 4.1.12 and vite 5.4.21 → 8.3.4 come with it), and `pnpm-workspace.yaml` overrides: axios 1.18.0 → 1.20.0, js-yaml 4.3.1 → 4.3.2, source-map-js → 1.2.2 (new), minimatch 3.1.3 / 9.0.7 (new), brace-expansion 1.1.21 (new — the 2.x line disappears because minimatch 9.0.7 pulls brace-expansion 5.x). This sweep corrects the PR #11 (2026-09-08) triage that had marked the vitest / vite / minimatch / brace-expansion alerts stale: verifying each advisory's full version ranges showed they were actually in-range, so all are fixed. The two documented rejects (#71 decode-uri-component, #2 braces) were dismissed as tolerable risk. Verified: 57/57 tests, lint and build clean.
+
+### Docs
+
+- **Troubleshooting note for the MCP "No bridge acquired for this context" error (#7)** — the README now documents that this generic error on MCP tool calls is an n8n-core limitation of the `vm` expression engine (the new default), with the workaround (`N8N_EXPRESSION_ENGINE=legacy` on the main process and all workers).
+
 ## [1.3.11] - 2026-09-08
 
 ### Fixed
