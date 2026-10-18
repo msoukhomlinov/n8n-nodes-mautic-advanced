@@ -336,6 +336,10 @@ npm run format
 **Cause**: Large datasets causing timeouts
 **Solution**: Use "Return All" option or set appropriate limits
 
+#### MCP Tool Calls Fail with "No bridge acquired for this context"
+**Cause**: On n8n instances where the new `vm` expression engine is the default (`N8N_EXPRESSION_ENGINE` unset or `vm`), the MCP Server Trigger's per-call parameter resolution dies inside n8n core before this node's `execute()` runs. This is an n8n-core limitation, not a fault of this node. See [issue #7](https://github.com/msoukhomlinov/n8n-nodes-mautic-advanced/issues/7).
+**Solution**: Set `N8N_EXPRESSION_ENGINE=legacy` on the n8n main process **and** every worker (queue mode), then restart.
+
 ### Getting Help
 1. Check the [Changelog](CHANGELOG.md) for recent fixes
 2. Search existing [Issues](https://github.com/msoukhomlinov/n8n-nodes-mautic-advanced/issues)
